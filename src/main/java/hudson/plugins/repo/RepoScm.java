@@ -63,6 +63,7 @@ public class RepoScm extends SCM {
 
 	// Advanced Fields:
 	private final String manifestBranch;
+	private final String manifestFile;
 	private final String repoUrl;
 
 	/**
@@ -80,6 +81,13 @@ public class RepoScm extends SCM {
 		return manifestBranch;
 	}
 
+   /**
+    * Returns the initial manifest file name. By default
+    */
+	public String getManifestFile() {
+		return manifestFile;
+	}
+
 	/**
 	 * The constructor takes in user parameters and sets them. Each job using
 	 * the RepoSCM will call this constructor.
@@ -90,12 +98,16 @@ public class RepoScm extends SCM {
 	 *            The branch of the manifest repository. Typically this is null
 	 *            or the empty string, which will cause repo to default to
 	 *            "master".
+	 * @param manifestFile
+	 *            The initial manifest file.
 	 */
 	@DataBoundConstructor
 	public RepoScm(final String manifestRepositoryUrl,
-			final String manifestBranch) {
+			final String manifestBranch,
+			final String manifestFile) {
 		this.manifestRepositoryUrl = manifestRepositoryUrl;
 		this.manifestBranch = Util.fixEmptyAndTrim(manifestBranch);
+		this.manifestFile = Util.fixEmptyAndTrim(manifestFile);
 		// TODO: repoUrl
 		this.repoUrl = null;
 	}
@@ -178,6 +190,10 @@ public class RepoScm extends SCM {
 		if (manifestBranch != null) {
 			commands.add("-b");
 			commands.add(manifestBranch);
+		}
+		if (manifestFile != null) {
+			commands.add("-m");
+			commands.add(manifestFile);
 		}
 		if (repoUrl != null) {
 			commands.add("--repo-url=" + repoUrl);
