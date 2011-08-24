@@ -23,6 +23,9 @@
  */
 package hudson.plugins.repo;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  * A ProjectState object represents the state of a project. This is used to see
  * when projects have changed. A repo manifest contains a list of projects, and
@@ -33,6 +36,9 @@ public class ProjectState {
 	private final String path;
 	private final String serverPath;
 	private final String revision;
+
+	private static Logger debug =
+		Logger.getLogger("hudson.plugins.repo.ProjectState");
 
 	/**
 	 * Create an object representing the state of a project.
@@ -49,6 +55,9 @@ public class ProjectState {
 		this.path = path;
 		this.serverPath = serverPath;
 		this.revision = revision;
+
+		debug.log(Level.FINE, "path: " + path + " serverPath: " + serverPath
+				+ " revision: " + revision);
 	}
 
 	/**

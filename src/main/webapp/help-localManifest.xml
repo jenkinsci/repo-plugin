@@ -1,0 +1,6 @@
+
+<div>
+  <p>
+     Optionally, specify the contents of .repo/local_manifest.xml. This is written prior to callinging sync.  
+  </p>
+</div>

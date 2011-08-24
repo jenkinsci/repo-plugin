@@ -39,9 +39,12 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.xml.sax.SAXException;
 
@@ -52,6 +55,9 @@ import com.thoughtworks.xstream.io.StreamException;
  * between builds. Differences are saved as a list of ChangeLogEntry.
  */
 public class ChangeLog extends ChangeLogParser {
+
+	private static Logger debug =
+		Logger.getLogger("hudson.plugins.repo.ChangeLog");
 
 	// TODO: Really need to add some unit tests for this class. That might
 	// require creating git commits, which will be tricky. See the git plugin
@@ -103,6 +109,8 @@ public class ChangeLog extends ChangeLogParser {
 			InterruptedException {
 		final List<ProjectState> changes =
 				currentState.whatChanged(previousState);
+
+		debug.log(Level.FINEST, "generateChangeLog: changes " + changes);
 		if (changes == null || changes.size() == 0) {
 			// No changes or the first job
 			return null;
@@ -110,7 +118,9 @@ public class ChangeLog extends ChangeLogParser {
 		final List<String> commands = new ArrayList<String>(5);
 		final List<ChangeLogEntry> logs = new ArrayList<ChangeLogEntry>();
 
+
 		for (final ProjectState change : changes) {
+			debug.log(Level.FINEST, "change: " + change);
 			if (change.getRevision() == null) {
 				// This project was just added to the manifest.
 				logs.add(new ChangeLogEntry(change.getPath(), change
@@ -186,10 +196,12 @@ public class ChangeLog extends ChangeLogParser {
 					final String path = fileLine.substring(39);
 					modifiedFiles.add(new ModifiedFile(path, action));
 				}
-				logs.add(new ChangeLogEntry(change.getPath(), change
+				ChangeLogEntry nc = new ChangeLogEntry(change.getPath(), change
 						.getServerPath(), revision, authorName, authorEmail,
 						authorDate, committerName, committerEmail,
-						committerDate, commitText, modifiedFiles));
+						committerDate, commitText, modifiedFiles);
+				logs.add(nc);
+				debug.log(Level.FINEST, nc.toString());
 			}
 		}
 		return logs;
@@ -213,6 +225,8 @@ public class ChangeLog extends ChangeLogParser {
 	 * @param workspace
 	 *            The FilePath of the workspace to use when computing
 	 *            differences. This path might be on a slave machine.
+	 * @param logger
+	 *            The logger to use to send debug messages to console.
 	 * @throws IOException
 	 *             is thrown if we have problems writing to the changelogFile
 	 * @throws InterruptedException
@@ -221,13 +235,15 @@ public class ChangeLog extends ChangeLogParser {
 	 */
 	public static void saveChangeLog(final RevisionState currentState,
 			final RevisionState previousState, final File changelogFile,
-			final Launcher launcher, final FilePath workspace)
+			final Launcher launcher, final FilePath workspace,
+			final PrintStream logger)
 			throws IOException, InterruptedException {
 		List<ChangeLogEntry> logs =
 				generateChangeLog(currentState, previousState, launcher,
 						workspace);
 
 		if (logs == null) {
+			debug.info("No logs found");
 			return;
 		}
 

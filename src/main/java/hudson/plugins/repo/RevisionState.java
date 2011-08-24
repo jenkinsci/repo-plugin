@@ -35,6 +35,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -54,6 +56,9 @@ public class RevisionState extends SCMRevisionState implements Serializable {
 	private final Map<String, ProjectState> projects =
 			new TreeMap<String, ProjectState>();
 	private final String branch;
+
+	private static Logger debug =
+		Logger.getLogger("hudson.plugins.repo.RevisionState");
 
 	/**
 	 * Creates a new RepoRevisionState.
@@ -175,6 +180,7 @@ public class RevisionState extends SCMRevisionState implements Serializable {
 			// Everything is new. The change log would include every change,
 			// which might be a little unwieldy (and take forever to
 			// generate/parse). Instead, we will return null (no changes)
+			debug.log(Level.FINE, "Everything is new");
 			return null;
 		}
 		final Set<String> keys = projects.keySet();
@@ -185,6 +191,7 @@ public class RevisionState extends SCMRevisionState implements Serializable {
 			if (status == null) {
 				// This is a new project, just added to the manifest.
 				final ProjectState newProject = projects.get(key);
+				debug.log(Level.FINE, "New project: " + key);
 				changes.add(new ProjectState(newProject.getPath(), newProject
 						.getServerPath(), null));
 			} else if (!status.equals(projects.get(key))) {
