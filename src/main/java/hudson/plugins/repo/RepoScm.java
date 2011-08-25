@@ -262,6 +262,24 @@ public class RepoScm extends SCM {
 		return true;
 	}
 
+	private int doSync(final Launcher launcher, final FilePath workspace,
+			final OutputStream logger)
+		throws IOException, InterruptedException {
+		final List<String> commands = new ArrayList<String>(4);
+		debug.log(Level.FINE, "Syncing out code in: " + workspace.getName());
+		commands.clear();
+		commands.add(getDescriptor().getExecutable());
+		commands.add("sync");
+		commands.add("-d");
+		if (jobs > 0) {
+			commands.add("--jobs=" + jobs);
+		}
+		int returnCode =
+				launcher.launch().stdout(logger).pwd(workspace)
+						.cmds(commands).join();
+		return returnCode;
+	}
+
 	private boolean checkoutCode(final Launcher launcher,
 			final FilePath workspace, final OutputStream logger)
 			throws IOException, InterruptedException {
@@ -303,18 +321,21 @@ public class RepoScm extends SCM {
 				lm.delete();
 			}
 		}
-		commands.clear();
-		commands.add(getDescriptor().getExecutable());
-		commands.add("sync");
-		commands.add("-d");
-		if (jobs > 0) {
-			commands.add("--jobs=" + jobs);
-		}
-		returnCode =
-				launcher.launch().stdout(logger).pwd(workspace)
-						.cmds(commands).join();
+
+		returnCode = doSync(launcher, workspace, logger);
 		if (returnCode != 0) {
-			return false;
+			debug.log(Level.WARNING, "Sync failed. Resetting repository");
+			commands.clear();
+			commands.add(getDescriptor().getExecutable());
+			commands.add("forall");
+			commands.add("-c");
+			commands.add("git reset --hard");
+			launcher.launch().stdout(logger).pwd(workspace).cmds(commands)
+				.join();
+			returnCode = doSync(launcher, workspace, logger);
+			if (returnCode != 0) {
+				return false;
+			}
 		}
 		return true;
 	}
