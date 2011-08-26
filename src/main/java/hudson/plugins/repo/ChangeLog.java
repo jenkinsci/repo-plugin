@@ -139,7 +139,9 @@ public class ChangeLog extends ChangeLogParser {
 			final FilePath gitdir = new FilePath(workspace, change.getPath());
 			commands.clear();
 			commands.add("git");
-			commands.add("whatchanged");
+			commands.add("log");
+			commands.add("--raw");
+			commands.add("--first-parent");
 			commands.add("--format=\"zzREPOzz%H%n%an<%ae>%aD"
 					+ "%n%cn<%ce>%cD%n%s%n%n%byyREPOyy\"");
 			// TODO: make this work with the -M flag to show copied and renamed
