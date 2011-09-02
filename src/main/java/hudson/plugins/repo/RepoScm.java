@@ -357,7 +357,7 @@ public class RepoScm extends SCM {
 	}
 
 	private int doSync(final Launcher launcher, final FilePath workspace,
-			final OutputStream logger)
+			final OutputStream logger, final int numJobs)
 		throws IOException, InterruptedException {
 		final List<String> commands = new ArrayList<String>(4);
 		debug.log(Level.FINE, "Syncing out code in: " + workspace.getName());
@@ -365,7 +365,7 @@ public class RepoScm extends SCM {
 		commands.add(getDescriptor().getExecutable());
 		commands.add("sync");
 		commands.add("-d");
-		if (jobs > 0) {
+		if (numJobs > 0) {
 			commands.add("--jobs=" + jobs);
 		}
 		int returnCode =
@@ -432,7 +432,7 @@ public class RepoScm extends SCM {
 			}
 		}
 
-		returnCode = doSync(launcher, workspace, logger);
+		returnCode = doSync(launcher, workspace, logger, jobs);
 		if (returnCode != 0) {
 			debug.log(Level.WARNING, "Sync failed. Resetting repository");
 			commands.clear();
@@ -442,7 +442,7 @@ public class RepoScm extends SCM {
 			commands.add("git reset --hard --quiet");
 			launcher.launch().stdout(logger).pwd(workspace).cmds(commands)
 				.join();
-			returnCode = doSync(launcher, workspace, logger);
+			returnCode = doSync(launcher, workspace, logger, 0);
 			if (returnCode != 0) {
 				return false;
 			}
