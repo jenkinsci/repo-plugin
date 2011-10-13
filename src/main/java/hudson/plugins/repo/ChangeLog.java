@@ -164,9 +164,15 @@ public class ChangeLog extends ChangeLogParser {
 				int endLine = changelog.indexOf('\n');
 				final String revision = changelog.substring(0, endLine);
 				int firstEmailPos = changelog.indexOf('<', endLine);
+				if (firstEmailPos < 0) {
+					continue;
+				}
 				final String authorName =
 						changelog.substring(endLine + 1, firstEmailPos);
 				int endEmail = changelog.indexOf('>', firstEmailPos);
+				if (endEmail < 0) {
+					continue;
+				}
 				final String authorEmail =
 						changelog.substring(firstEmailPos + 1, endEmail);
 				endLine = changelog.indexOf('\n', endEmail);
@@ -182,6 +188,9 @@ public class ChangeLog extends ChangeLogParser {
 				final String committerDate =
 						changelog.substring(endEmail + 1, endLine);
 				final int endComment = changelog.indexOf("yyREPOyy", endLine);
+				if (endComment < 0) {
+					continue;
+				}
 				final String commitText =
 						changelog.substring(endLine + 1, endComment);
 
