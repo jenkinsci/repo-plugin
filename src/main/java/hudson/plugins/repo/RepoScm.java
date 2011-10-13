@@ -150,6 +150,14 @@ public class RepoScm extends SCM {
 	}
 
 	/**
+	 * Returns the URL of the repo repository. By default, this is null
+	 * and the --repo-url parameter is not specified.
+	 */
+	public String getRepoUrl() {
+		return repoUrl;
+	}
+
+	/**
 	 * The constructor takes in user parameters and sets them. Each job using
 	 * the RepoSCM will call this constructor.
 	 *
@@ -173,12 +181,16 @@ public class RepoScm extends SCM {
 	 * @param destinationDir
 	 *            If not null then the source is synced to the destinationDir
 	 *            subdirectory of the workspace.
+	 * @param repoUrl
+	 *            The repo repository location. Normally, this would be NULL
+	 *            and --repo-url is not specified.
 	 */
 	@DataBoundConstructor
 	public RepoScm(final String manifestRepositoryUrl,
 			final String manifestBranch, final String manifestFile,
 			final String mirrorDir, final int jobs,
-			final String localManifest, final String destinationDir) {
+			final String localManifest, final String destinationDir,
+			final String repoUrl) {
 		this.manifestRepositoryUrl = manifestRepositoryUrl;
 		this.manifestBranch = Util.fixEmptyAndTrim(manifestBranch);
 		this.manifestFile = Util.fixEmptyAndTrim(manifestFile);
@@ -186,8 +198,7 @@ public class RepoScm extends SCM {
 		this.jobs = jobs;
 		this.localManifest = Util.fixEmptyAndTrim(localManifest);
 		this.destinationDir = Util.fixEmptyAndTrim(destinationDir);
-		// TODO: repoUrl
-		this.repoUrl = null;
+		this.repoUrl = repoUrl;
 	}
 
 	@Override
