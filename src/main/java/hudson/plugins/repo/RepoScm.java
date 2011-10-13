@@ -23,6 +23,7 @@
  */
 package hudson.plugins.repo;
 
+import hudson.plugins.repo.browser.GitWeb;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -44,6 +45,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -93,6 +95,9 @@ public class RepoScm extends SCM {
 	private final int jobs;
 	private final String localManifest;
 	private final String destinationDir;
+
+	/** TODO support other browsers */
+	private GitWeb browser;
 
 	/**
 	 * Returns the manifest repository URL.
@@ -184,13 +189,15 @@ public class RepoScm extends SCM {
 	 * @param repoUrl
 	 *            The repo repository location. Normally, this would be NULL
 	 *            and --repo-url is not specified.
+	 * @param browser
+	 *            The repository browser.
 	 */
 	@DataBoundConstructor
 	public RepoScm(final String manifestRepositoryUrl,
 			final String manifestBranch, final String manifestFile,
 			final String mirrorDir, final int jobs,
 			final String localManifest, final String destinationDir,
-			final String repoUrl) {
+			final String repoUrl, final GitWeb browser) {
 		this.manifestRepositoryUrl = manifestRepositoryUrl;
 		this.manifestBranch = Util.fixEmptyAndTrim(manifestBranch);
 		this.manifestFile = Util.fixEmptyAndTrim(manifestFile);
@@ -199,6 +206,7 @@ public class RepoScm extends SCM {
 		this.localManifest = Util.fixEmptyAndTrim(localManifest);
 		this.destinationDir = Util.fixEmptyAndTrim(destinationDir);
 		this.repoUrl = repoUrl;
+		this.browser = browser;
 	}
 
 	@Override
@@ -490,6 +498,11 @@ public class RepoScm extends SCM {
 		return (DescriptorImpl) super.getDescriptor();
 	}
 
+	@Override
+	public GitWeb getBrowser() {
+		return browser;
+	}
+
 	/**
 	 * A DescriptorImpl contains variables used server-wide. In our case, we
 	 * only store the path to the repo and git executables, which defaults to
@@ -506,7 +519,7 @@ public class RepoScm extends SCM {
 		 * file system.
 		 */
 		public DescriptorImpl() {
-			super(null);
+			super(RepoScm.class, GitWeb.class);
 			load();
 		}
 
@@ -575,6 +588,26 @@ public class RepoScm extends SCM {
 			} else {
 				return gitExecutable;
 			}
+		}
+
+		/**
+		 * Returns a new git web browser.
+		 * @param url The base URL for gitweb
+		 * @throws RepoException
+		 * is thrown if the URL is malformed.
+		 */
+		public static GitWeb createGitWeb(final String url)
+			throws RepoException {
+			GitWeb gitWeb = null;
+			String gitWebUrl = url;
+			if (gitWebUrl != null && gitWebUrl.length() > 0) {
+				try {
+					gitWeb = new GitWeb(gitWebUrl);
+				} catch (MalformedURLException e) {
+					throw new RepoException("Invalid url: " + url, e);
+				}
+			}
+			return gitWeb;
 		}
 	}
 }

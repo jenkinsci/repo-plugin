@@ -23,11 +23,12 @@
  */
 package hudson.plugins.repo;
 
+import hudson.MarkupText;
 import hudson.model.User;
 import hudson.scm.ChangeLogSet;
 import hudson.scm.EditType;
 import hudson.scm.ChangeLogSet.AffectedFile;
-
+import hudson.scm.ChangeLogAnnotator;
 import java.util.AbstractList;
 import java.util.Collection;
 import java.util.List;
@@ -263,6 +264,15 @@ public class ChangeLogEntry extends ChangeLogSet.Entry {
 	@Override
 	public String getMsg() {
 		return getCommitText();
+	}
+
+	/** Returns the comment to be fully annotated. */
+	public String getCommentAnnotated() {
+		MarkupText markup = new MarkupText(getCommitText());
+		for (ChangeLogAnnotator a : ChangeLogAnnotator.all()) {
+			a.annotate(getParent().build, this, markup);
+		}
+		return markup.toString(false);
 	}
 
 	@Override

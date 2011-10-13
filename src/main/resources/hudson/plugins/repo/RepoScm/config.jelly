@@ -39,5 +39,7 @@
 		<f:entry title="Repo URL" help="/plugin/repo/help-repoUrl.html">
 			<f:textbox name="repo.repoUrl" value="${scm.repoUrl}"/>
 		</f:entry>
+
 	</f:advanced>
+        <t:listScmBrowsers name="repo.browser" />
 </j:jelly>
