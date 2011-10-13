@@ -12,4 +12,11 @@
 				checkUrl="'${rootURL}/scm/RepoScm/executableCheck?value='+escape(this.value)"/>
 		</f:entry>
 	</f:section>
+
+	<f:section title="Repo: git">
+		<f:entry title="Git command line executable"  help="/plugin/repo/help-gitExecutable.html">
+			<f:textbox name="repo.GitExecutable" value="${descriptor.GitExecutable}"
+				checkUrl="'${rootURL}/scm/RepoScm/gitExecutableCheck?value='+escape(this.value)"/>
+		</f:entry>
+	</f:section>
 </j:jelly>

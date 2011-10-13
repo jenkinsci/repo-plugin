@@ -3,5 +3,16 @@
     The initial manifest file to use while initializing the repo. This is passed to repo as
     <code>repo init -m <i>manifestFile</i></code>.  If a manifest file is not specified,
     repo uses the default of "default.xml".
+    <p>
+    It is also possible to specify the manifest file by setting the "OVERRIDE_MANIFEST" build variable.
+    OVERRIDE_MANIFEST only applies when checking out the source code and not during polling. It's purpose is
+    to allow fan-out build configurations where multiple slaves build the same version of the source in parallel.
+
+    To generate a manifest file records the revision of every git repository use this command.
+    <code> repo manifest -r -o ${JOB_NAME}-${BUILD_NUMBER}.xml </code>
+
+    N.B. It is preferable to specify the manifest revision via the BRANCH parameter where the revision is a tag
+    created by the parent build.
+    </p>
   </p>
 </div>

@@ -48,6 +48,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.Map;
 
 import net.sf.json.JSONObject;
 
@@ -60,6 +61,24 @@ import org.kohsuke.stapler.StaplerRequest;
  * configuration and to check out the code using a repo binary.
  */
 public class RepoScm extends SCM {
+
+	/**
+	 * Build variable key. Optionally, specify the name of file to use instead
+	 * of the manifest.xml file when checking out the code.
+	 */
+	private static final String OVERRIDE_MANIFEST_KEY = "OVERRIDE_MANIFEST";
+
+	/**
+	 * Build variable key. Optionally, specify the revision of the manifest.xml
+	 * to use e.g. a tag that refers to a fully versioned manifest.xml.
+	 */
+	private static final String BRANCH_KEY = "BRANCH";
+
+	/** The manifest.xml symlink must be in the manifests subdirectory. This
+	 * is the name of the temporary file in that directory used for the
+	 * overriden manifest.
+	 */
+	private static final String OVERRIDE_MANIFEST = "jenkins-repo-override.xml";
 
 	private static Logger debug = Logger
 			.getLogger("hudson.plugins.repo.RepoScm");
@@ -107,7 +126,7 @@ public class RepoScm extends SCM {
 	}
 
 	/**
-	 * Returns the number of jobs used for sync. By default, this is null and
+	 * Returns the number of jobs used for sync. By default, this is zero and
 	 * repo does not use concurrent jobs.
 	 */
 	public int getJobs() {
@@ -189,6 +208,7 @@ public class RepoScm extends SCM {
 			final FilePath workspace, final TaskListener listener,
 			final SCMRevisionState baseline) throws IOException,
 			InterruptedException {
+		debug.log(Level.FINE, "Comparing revisions in: " + workspace.getName());
 		SCMRevisionState myBaseline = baseline;
 		if (myBaseline == null) {
 			// Probably the first build, or possibly an aborted build.
@@ -208,7 +228,8 @@ public class RepoScm extends SCM {
 			repoDir = workspace;
 		}
 
-		if (!checkoutCode(launcher, repoDir, listener.getLogger())) {
+		if (!checkoutCode(launcher, repoDir, listener.getLogger(),
+				manifestBranch, manifestFile)) {
 			// Some error occurred, try a build now so it gets logged.
 			return new PollingResult(myBaseline, myBaseline,
 					Change.INCOMPARABLE);
@@ -233,7 +254,9 @@ public class RepoScm extends SCM {
 			final Launcher launcher, final FilePath workspace,
 			final BuildListener listener, final File changelogFile)
 			throws IOException, InterruptedException {
+		final List<String> commands = new ArrayList<String>(4);
 
+		/* Repo may be checked out in a sub-dir of workspace */
 		FilePath repoDir;
 		if (destinationDir != null) {
 			repoDir = workspace.child(destinationDir);
@@ -244,7 +267,67 @@ public class RepoScm extends SCM {
 			repoDir = workspace;
 		}
 
-		if (!checkoutCode(launcher, repoDir, listener.getLogger())) {
+		/* Delete the default branch if it has been created. Otherwise,
+		 * it's easy to get merge conflicts when re-using a workspace and
+		 * checking out different branches.
+		 */
+		FilePath md = repoDir.child(".repo/manifests");
+		if (md.isDirectory()) {
+			commands.clear();
+			commands.add(getDescriptor().getGitExecutable());
+			commands.add("checkout");
+			commands.add("default");
+			int returnCode = launcher.launch().stdout(listener.getLogger())
+				.pwd(md) .cmds(commands).join();
+
+			if (returnCode == 0) {
+				commands.clear();
+				commands.add(getDescriptor().getGitExecutable());
+				commands.add("checkout");
+				commands.add("--quiet");
+				commands.add("HEAD~1");
+				launcher.launch().stdout(listener.getLogger()).pwd(md)
+					.cmds(commands).join();
+
+				commands.clear();
+				commands.add(getDescriptor().getGitExecutable());
+				commands.add("branch");
+				commands.add("-D");
+				commands.add("default");
+				launcher.launch().stdout(listener.getLogger()).pwd(md)
+					.cmds(commands).join();
+			}
+		}
+
+		Map<String, String> buildVars = build.getBuildVariables();
+		String mFile = manifestFile;
+		String mBranch = null;
+		if (buildVars != null) {
+			mBranch = Util.fixEmptyAndTrim(buildVars.get(BRANCH_KEY));
+			if (mBranch == null) {
+				mBranch = manifestBranch;
+			}
+
+			String overrideManifest = Util.fixEmptyAndTrim(
+					buildVars.get(OVERRIDE_MANIFEST_KEY));
+
+			if (overrideManifest != null) {
+				debug.log(Level.FINE, "Overriding manifest.xml with: "
+						+ overrideManifest);
+				File of = new File(overrideManifest);
+				FilePath ofp = new FilePath(of);
+
+				FilePath mfp = repoDir.child(".repo/manifests/"
+						+ OVERRIDE_MANIFEST);
+				if (mfp != null && ofp != null) {
+					mfp.copyFrom(ofp);
+					mFile = OVERRIDE_MANIFEST;
+				}
+			}
+		}
+
+		if (!checkoutCode(launcher, repoDir, listener.getLogger(),
+					mBranch, mFile)) {
 			return false;
 		}
 		final String manifest =
@@ -281,8 +364,10 @@ public class RepoScm extends SCM {
 	}
 
 	private boolean checkoutCode(final Launcher launcher,
-			final FilePath workspace, final OutputStream logger)
+			final FilePath workspace, final OutputStream logger,
+			final String mBranch, final String mFile)
 			throws IOException, InterruptedException {
+
 		final List<String> commands = new ArrayList<String>(4);
 
 		debug.log(Level.INFO, "Checking out code in: " + workspace.getName());
@@ -291,17 +376,30 @@ public class RepoScm extends SCM {
 		commands.add("init");
 		commands.add("-u");
 		commands.add(manifestRepositoryUrl);
-		if (manifestBranch != null) {
+
+		if (mBranch != null) {
 			commands.add("-b");
-			commands.add(manifestBranch);
+			commands.add(mBranch);
 		}
-		if (manifestFile != null) {
-			commands.add("-m");
-			commands.add(manifestFile);
+
+		FilePath mfp = workspace.child(".repo/manifest.xml");
+		if (mfp != null) {
+			if (mfp.delete()) {
+				debug.log(Level.FINE, "Removed old manifest.xml symlink");
+			}
 		}
+
+		commands.add("-m");
+		if (mFile != null) {
+			commands.add(mFile);
+		} else {
+			commands.add("default.xml");
+		}
+
 		if (mirrorDir != null) {
 			commands.add("--reference=" + mirrorDir);
 		}
+
 		if (repoUrl != null) {
 			commands.add("--repo-url=" + repoUrl);
 			commands.add("--no-repo-verify");
@@ -312,6 +410,7 @@ public class RepoScm extends SCM {
 		if (returnCode != 0) {
 			return false;
 		}
+
 		if (workspace != null) {
 			FilePath rdir = workspace.child(".repo");
 			FilePath lm = rdir.child("local_manifest.xml");
@@ -329,7 +428,7 @@ public class RepoScm extends SCM {
 			commands.add(getDescriptor().getExecutable());
 			commands.add("forall");
 			commands.add("-c");
-			commands.add("git reset --hard");
+			commands.add("git reset --hard --quiet");
 			launcher.launch().stdout(logger).pwd(workspace).cmds(commands)
 				.join();
 			returnCode = doSync(launcher, workspace, logger);
@@ -382,12 +481,14 @@ public class RepoScm extends SCM {
 
 	/**
 	 * A DescriptorImpl contains variables used server-wide. In our case, we
-	 * only store the path to the repo executable, which defaults to just
-	 * "repo". This class also handles some Jenkins housekeeping.
+	 * only store the path to the repo and git executables, which defaults to
+	 * just "repo" and "git" respectively.
+	 * This class also handles some Jenkins housekeeping.
 	 */
 	@Extension
 	public static class DescriptorImpl extends SCMDescriptor<RepoScm> {
 		private String repoExecutable;
+		private String gitExecutable;
 
 		/**
 		 * Call the superclass constructor and load our configuration from the
@@ -409,6 +510,8 @@ public class RepoScm extends SCM {
 				throws hudson.model.Descriptor.FormException {
 			repoExecutable =
 					Util.fixEmptyAndTrim(json.getString("executable"));
+			gitExecutable =
+					Util.fixEmptyAndTrim(json.getString("GitExecutable"));
 			save();
 			return super.configure(req, json);
 		}
@@ -427,6 +530,19 @@ public class RepoScm extends SCM {
 		}
 
 		/**
+		 * Check that the specified parameter exists on the file system and is a
+		 * valid executable.
+		 *
+		 * @param value
+		 *            A path to an executable on the file system.
+		 * @return Error if the file doesn't exist, otherwise return OK.
+		 */
+		public FormValidation doGitExecutableCheck(
+				@QueryParameter final String value) {
+			return FormValidation.validateExecutable(value);
+		}
+
+		/**
 		 * Returns the command to use when running repo. By default, we assume
 		 * that repo is in the server's PATH and just return "repo".
 		 */
@@ -435,6 +551,18 @@ public class RepoScm extends SCM {
 				return "repo";
 			} else {
 				return repoExecutable;
+			}
+		}
+
+		/**
+		 * Returns the command to use when running git. By default, we assume
+		 * that git is in the server's PATH and just return "git"
+		 */
+		public String getGitExecutable() {
+			if (gitExecutable == null) {
+				return "git";
+			} else {
+				return gitExecutable;
 			}
 		}
 	}
