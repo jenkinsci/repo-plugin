@@ -32,6 +32,16 @@
 			<f:textbox name="repo.jobs" value="${scm.jobs}" clazz="number"/>
 		</f:entry>
 
+		<f:entry title="Current Branch" help="/plugin/repo/help-currentBranch.html">
+			<f:checkbox name="repo.currentBranch"
+			   checked="${h.defaultToTrue(scm.currentBranch)}" />
+		</f:entry>
+
+		<f:entry title="Quiet" help="/plugin/repo/help-quiet.html">
+			<f:checkbox name="repo.quiet"
+			   checked="${h.defaultToTrue(scm.quiet)}" />
+		</f:entry>
+
 		<f:entry title="Local Manifest" help="/plugin/repo/help-localManifest.html">
 			<f:textarea name="repo.localManifest" value="${scm.localManifest}" rows="10" />
 		</f:entry>
