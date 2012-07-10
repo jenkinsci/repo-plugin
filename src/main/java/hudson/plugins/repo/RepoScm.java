@@ -74,6 +74,8 @@ public class RepoScm extends SCM {
 	private final int jobs;
 	private final String localManifest;
 	private final String destinationDir;
+	private final boolean currentBranch;
+	private final boolean quiet;
 
 	/**
 	 * Returns the manifest repository URL.
@@ -131,6 +133,19 @@ public class RepoScm extends SCM {
 	}
 
 	/**
+	 * Returns the value of currentBranch.
+    */
+	public boolean isCurrentBranch() {
+		return currentBranch;
+	}
+
+    /**
+	 * Returns the value of quiet.
+    */
+	public boolean isQuiet() {
+		return quiet;
+	}
+	/**
 	 * The constructor takes in user parameters and sets them. Each job using
 	 * the RepoSCM will call this constructor.
 	 *
@@ -154,12 +169,19 @@ public class RepoScm extends SCM {
 	 * @param destinationDir
 	 *            If not null then the source is synced to the destinationDir
 	 *            subdirectory of the workspace.
+	 * @param currentBranch
+	 * 			  if this value is true,
+	 *            add "-c" options when excute "repo sync".
+	 * @param quiet
+	 * 			  if this value is true,
+	 *            add "-q" options when excute "repo sync".
 	 */
 	@DataBoundConstructor
 	public RepoScm(final String manifestRepositoryUrl,
 			final String manifestBranch, final String manifestFile,
 			final String mirrorDir, final int jobs,
-			final String localManifest, final String destinationDir) {
+			final String localManifest, final String destinationDir,
+			final boolean currentBranch, final boolean quiet) {
 		this.manifestRepositoryUrl = manifestRepositoryUrl;
 		this.manifestBranch = Util.fixEmptyAndTrim(manifestBranch);
 		this.manifestFile = Util.fixEmptyAndTrim(manifestFile);
@@ -167,6 +189,8 @@ public class RepoScm extends SCM {
 		this.jobs = jobs;
 		this.localManifest = Util.fixEmptyAndTrim(localManifest);
 		this.destinationDir = Util.fixEmptyAndTrim(destinationDir);
+		this.currentBranch = currentBranch;
+		this.quiet = quiet;
 		// TODO: repoUrl
 		this.repoUrl = null;
 	}
@@ -271,6 +295,12 @@ public class RepoScm extends SCM {
 		commands.add(getDescriptor().getExecutable());
 		commands.add("sync");
 		commands.add("-d");
+		if (isCurrentBranch()) {
+			commands.add("-c");
+		}
+        if (isQuiet()) {
+            commands.add("-q");
+        }
 		if (jobs > 0) {
 			commands.add("--jobs=" + jobs);
 		}
