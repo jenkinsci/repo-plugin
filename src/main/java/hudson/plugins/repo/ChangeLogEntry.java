@@ -260,6 +260,15 @@ public class ChangeLogEntry extends ChangeLogSet.Entry {
 		return modifiedFiles;
 	}
 
+	/**
+	 * Returns a set of paths in the workspace that was
+	 * affected by this change.
+	 */
+	@Override
+	public List<ModifiedFile> getAffectedFiles() {
+		return modifiedFiles;
+	}
+
 	@Override
 	public String getMsg() {
 		return getCommitText();
