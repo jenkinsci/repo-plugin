@@ -3,4 +3,16 @@
      The contents of .repo/local_manifest.xml. This is written prior to
 callinging sync. The default is to not use a local_manifest file.
   </p>
+  <p>The may be given here literally, as XML; see the example below.
+Such literal content <b>must</b> start with the
+string <code>&lt;?xml</code>.  Alternatively, the content may be given
+as an URL, in which case the file pointed by the URL is user.  If the
+content does not start with the code&lt;?xml</code> prefix, it is
+assumed to be an URL.</p>
+  <pre>
+    &lt;?xml version="1.0" encoding="UTF-8"?&gt;
+    &lt;manifest&gt;
+      &lt;project path="external/project" name="org/project" remote="github" revision="master" /&/gt;
+    &lt;/manifest&gt;
+  </pre>
 </div>

@@ -44,6 +44,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -150,7 +151,10 @@ public class RepoScm extends SCM {
 	 *            The number of concurrent jobs to use for the sync command. If
 	 *            this is 0 or negative the jobs parameter is not specified.
 	 * @param localManifest
-	 *            If not null this string is written to .repo/local_manifest.xml
+	 *	      May be null, a string containing XML, or an URL.
+	 *	      If XML, this string is written to .repo/local_manifest.xml
+	 *	      If an URL, the URL is fetched and the content is written
+	 *	      to .repo/local_manifest.xml
 	 * @param destinationDir
 	 *            If not null then the source is synced to the destinationDir
 	 *            subdirectory of the workspace.
@@ -315,10 +319,14 @@ public class RepoScm extends SCM {
 		if (workspace != null) {
 			FilePath rdir = workspace.child(".repo");
 			FilePath lm = rdir.child("local_manifest.xml");
+			lm.delete();
 			if (localManifest != null) {
-				lm.write(localManifest, null);
-			} else {
-				lm.delete();
+				if (localManifest.startsWith("<?xml")) {
+					lm.write(localManifest, null);
+				} else {
+					URL url = new URL(localManifest);
+					lm.copyFrom(url);
+				}
 			}
 		}
 
