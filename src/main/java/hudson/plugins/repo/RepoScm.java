@@ -200,6 +200,25 @@ public class RepoScm extends SCM {
 		this.repoUrl = null;
 	}
 
+	private FilePath getRepoDir(final FilePath workspace)
+		throws IOException, InterruptedException {
+		if (workspace == null) {
+			throw new IOException("getRepoDir: no workspace defined");
+		}
+
+		final FilePath repoDir;
+		if (destinationDir != null) {
+			repoDir = workspace.child(destinationDir);
+			if (!repoDir.isDirectory()) {
+				repoDir.mkdirs();
+			}
+		} else {
+			repoDir = workspace;
+		}
+		return repoDir;
+	}
+
+
 	@Override
 	public SCMRevisionState calcRevisionsFromBuild(
 			final AbstractBuild<?, ?> build, final Launcher launcher,
@@ -227,15 +246,7 @@ public class RepoScm extends SCM {
 			}
 		}
 
-		FilePath repoDir;
-		if (destinationDir != null) {
-			repoDir = workspace.child(destinationDir);
-			if (!repoDir.isDirectory()) {
-				repoDir.mkdirs();
-			}
-		} else {
-			repoDir = workspace;
-		}
+		final FilePath repoDir = getRepoDir(workspace);
 
 		if (!checkoutCode(launcher, repoDir, listener.getLogger())) {
 			// Some error occurred, try a build now so it gets logged.
@@ -263,15 +274,7 @@ public class RepoScm extends SCM {
 			final BuildListener listener, final File changelogFile)
 			throws IOException, InterruptedException {
 
-		FilePath repoDir;
-		if (destinationDir != null) {
-			repoDir = workspace.child(destinationDir);
-			if (!repoDir.isDirectory()) {
-				repoDir.mkdirs();
-			}
-		} else {
-			repoDir = workspace;
-		}
+		FilePath repoDir = getRepoDir(workspace);
 
 		if (!checkoutCode(launcher, repoDir, listener.getLogger())) {
 			return false;
