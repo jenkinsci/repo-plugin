@@ -151,10 +151,10 @@ public class RepoScm extends SCM {
 	 *            The number of concurrent jobs to use for the sync command. If
 	 *            this is 0 or negative the jobs parameter is not specified.
 	 * @param localManifest
-	 *	      May be null, a string containing XML, or an URL.
-	 *	      If XML, this string is written to .repo/local_manifest.xml
-	 *	      If an URL, the URL is fetched and the content is written
-	 *	      to .repo/local_manifest.xml
+	 *            May be null, a string containing XML, or an URL.
+	 *            If XML, this string is written to .repo/local_manifest.xml
+	 *            If an URL, the URL is fetched and the content is written
+	 *            to .repo/local_manifest.xml
 	 * @param destinationDir
 	 *            If not null then the source is synced to the destinationDir
 	 *            subdirectory of the workspace.
