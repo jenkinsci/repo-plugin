@@ -23,6 +23,8 @@
  */
 package hudson.plugins.repo;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -31,7 +33,7 @@ import java.util.logging.Logger;
  * when projects have changed. A repo manifest contains a list of projects, and
  * a build in Hudson has a list of ProjectStates.
  */
-public class ProjectState {
+public final class ProjectState {
 
 	private final String path;
 	private final String serverPath;
@@ -40,8 +42,13 @@ public class ProjectState {
 	private static Logger debug =
 		Logger.getLogger("hudson.plugins.repo.ProjectState");
 
+	private static Map<Integer, ProjectState> projectStateCache
+		= new HashMap<Integer, ProjectState>();
+
 	/**
 	 * Create an object representing the state of a project.
+	 *
+	 * Project state is immutable and cached.
 	 *
 	 * @param path
 	 *            The client-side path of the project
@@ -50,7 +57,25 @@ public class ProjectState {
 	 * @param revision
 	 *            The SHA-1 revision of the project
 	 */
-	public ProjectState(final String path, final String serverPath,
+	public static synchronized ProjectState constructCachedInstance(
+			final String path, final String serverPath, final String revision) {
+		ProjectState projectState
+			= projectStateCache.get(
+					calculateHashCode(path, serverPath, revision));
+
+		if (projectState == null) {
+			projectState = new ProjectState(path, serverPath, revision);
+			projectStateCache.put(projectState.hashCode(), projectState);
+		}
+
+		return projectState;
+	}
+
+	/**
+	 * Private constructor called by named constructor
+	 * constructCachedInstance().
+	 */
+	private ProjectState(final String path, final String serverPath,
 			final String revision) {
 		this.path = path;
 		this.serverPath = serverPath;
@@ -59,6 +84,24 @@ public class ProjectState {
 		debug.log(Level.FINE, "path: " + path + " serverPath: " + serverPath
 				+ " revision: " + revision);
 	}
+
+	/**
+	 * Enforce usage of the cache when xstream deserializes the
+	 * ProjectState objects.
+	 */
+	private synchronized Object readResolve() {
+		ProjectState projectState
+			= projectStateCache.get(
+				calculateHashCode(path, serverPath, revision));
+
+		if (projectState == null) {
+			projectStateCache.put(this.hashCode(), this);
+			projectState = this;
+		}
+
+		return projectState;
+	}
+
 
 	/**
 	 * Gets the client-side path of the project.
@@ -99,8 +142,24 @@ public class ProjectState {
 
 	@Override
 	public int hashCode() {
+		return calculateHashCode(path, serverPath, revision);
+	}
+
+	/**
+	 * Calculates the hash code of a would-be ProjectState object with
+	 * the provided parameters.
+	 *
+	 * @param path
+	 *            The client-side path of the project
+	 * @param serverPath
+	 *            The server-side path of the project
+	 * @param revision
+	 *            The SHA-1 revision of the project
+	 */
+	public static int calculateHashCode(final String path,
+			final String serverPath, final String revision) {
 		return 23 + (path == null ? 37 : path.hashCode())
-				+ (serverPath == null ? 97 : serverPath.hashCode())
-				+ (revision == null ? 389 : revision.hashCode());
+			+ (serverPath == null ? 97 : serverPath.hashCode())
+			+ (revision == null ? 389 : revision.hashCode());
 	}
 }

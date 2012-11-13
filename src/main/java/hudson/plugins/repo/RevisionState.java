@@ -104,8 +104,8 @@ public class RevisionState extends SCMRevisionState implements Serializable {
 					path = serverPath;
 				}
 				if (path != null && serverPath != null && revision != null) {
-					projects.put(path, new ProjectState(path, serverPath,
-							revision));
+					projects.put(path, ProjectState.constructCachedInstance(
+							path, serverPath, revision));
 					if (logger != null) {
 						logger.println("Added a project: " + path
 								+ " at revision: " + revision);
@@ -194,8 +194,9 @@ public class RevisionState extends SCMRevisionState implements Serializable {
 				// This is a new project, just added to the manifest.
 				final ProjectState newProject = projects.get(key);
 				debug.log(Level.FINE, "New project: " + key);
-				changes.add(new ProjectState(newProject.getPath(), newProject
-						.getServerPath(), null));
+				changes.add(ProjectState.constructCachedInstance(
+						newProject.getPath(), newProject.getServerPath(),
+						null));
 			} else if (!status.equals(projects.get(key))) {
 				changes.add(previousStateCopy.get(key));
 			}
