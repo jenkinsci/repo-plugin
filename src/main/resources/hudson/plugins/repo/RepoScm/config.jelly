@@ -24,6 +24,10 @@
 			<f:textbox name="repo.destinationDir" value="${scm.destinationDir}"/>
 		</f:entry>
 
+		<f:entry title="Repo Url" help="/plugin/repo/help-repoUrl.html">
+			<f:textbox name="repo.repoUrl" value="${scm.repoUrl}"/>
+		</f:entry>
+
 		<f:entry title="Mirror Directory" help="/plugin/repo/help-mirrorDir.html">
 			<f:textbox name="repo.mirrorDir" value="${scm.mirrorDir}"/>
 		</f:entry>
