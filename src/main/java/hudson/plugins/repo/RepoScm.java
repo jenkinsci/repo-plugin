@@ -102,6 +102,13 @@ public class RepoScm extends SCM {
 	}
 
 	/**
+	 * Returns the repo url. by default, this is null and
+	 * repo is fetched from aosp
+	 */
+	public String getRepoUrl() {
+		return repoUrl;
+	}
+	/**
 	 * Returns the name of the mirror directory. By default, this is null and
 	 * repo does not use a mirror.
 	 */
