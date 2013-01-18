@@ -70,6 +70,7 @@ public class RepoScm extends SCM {
 	// Advanced Fields:
 	private final String manifestBranch;
 	private final String manifestFile;
+	private final String manifestGroup;
 	private final String repoUrl;
 	private final String mirrorDir;
 	private final int jobs;
@@ -100,6 +101,14 @@ public class RepoScm extends SCM {
 	public String getManifestFile() {
 		return manifestFile;
 	}
+
+    /**
+     * Returns the group of projects to fetch. By default, this is null and
+     * repo will fetch the default group.
+     */
+    public String getManifestGroup() {
+		return manifestGroup;
+    }
 
 	/**
 	 * Returns the name of the mirror directory. By default, this is null and
@@ -160,6 +169,10 @@ public class RepoScm extends SCM {
 	 * @param manifestFile
 	 *            The file to use as the repository manifest. Typically this is
 	 *            null which will cause repo to use the default of "default.xml"
+     * @param manifestGroup
+     *            The group name for the projects that need to be fetched.
+     *            Typically, this is null and all projects tagged 'default' will
+     *            be fetched.
 	 * @param mirrorDir
 	 *            The path of the mirror directory to reference when
 	 *            initializing repo.
@@ -184,11 +197,12 @@ public class RepoScm extends SCM {
 	@DataBoundConstructor
 	public RepoScm(final String manifestRepositoryUrl,
 			final String manifestBranch, final String manifestFile,
-			final String mirrorDir, final int jobs,
+			final String manifestGroup, final String mirrorDir, final int jobs,
 			final String localManifest, final String destinationDir,
 			final boolean currentBranch, final boolean quiet) {
 		this.manifestRepositoryUrl = manifestRepositoryUrl;
 		this.manifestBranch = Util.fixEmptyAndTrim(manifestBranch);
+		this.manifestGroup = Util.fixEmptyAndTrim(manifestGroup);
 		this.manifestFile = Util.fixEmptyAndTrim(manifestFile);
 		this.mirrorDir = Util.fixEmptyAndTrim(mirrorDir);
 		this.jobs = jobs;
@@ -340,6 +354,10 @@ public class RepoScm extends SCM {
 		if (repoUrl != null) {
 			commands.add("--repo-url=" + repoUrl);
 			commands.add("--no-repo-verify");
+		}
+		if (manifestGroup != null) {
+			commands.add("-g");
+			commands.add(manifestGroup);
 		}
 		int returnCode =
 				launcher.launch().stdout(logger).pwd(workspace)

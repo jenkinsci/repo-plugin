@@ -20,6 +20,10 @@
 			<f:textbox name="repo.manifestFile" value="${scm.manifestFile}"/>
 		</f:entry>
 
+		<f:entry title="Group" help="/plugin/repo/help-manifestGroup.html">
+			<f:textbox name="repo.manifestGroup" value="${scm.manifestGroup}"/>
+		</f:entry>
+
 		<f:entry title="Destination Directory" help="/plugin/repo/help-destinationDir.html">
 			<f:textbox name="repo.destinationDir" value="${scm.destinationDir}"/>
 		</f:entry>
