@@ -42,8 +42,11 @@ import hudson.util.FormValidation;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.PrintStream;
+import java.io.StringReader;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,6 +58,13 @@ import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+
+import javax.xml.parsers.DocumentBuilderFactory;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 
 /**
  * The main entrypoint of the plugin. This class contains code to store user
@@ -77,6 +87,7 @@ public class RepoScm extends SCM {
     private final String destinationDir;
     private final boolean currentBranch;
     private final boolean quiet;
+    private final String dynamicTrigger;
 
     /**
      * Returns the manifest repository URL.
@@ -155,6 +166,14 @@ public class RepoScm extends SCM {
     }
 
     /**
+     * Returns the file name to generate a dynamic trigger file to.
+     * by default, this is null and there isn't any generated
+     */
+    public String getDynamicTrigger() {
+        return dynamicTrigger;
+    }
+
+    /**
      * The constructor takes in user parameters and sets them. Each job using
      * the RepoSCM will call this constructor.
      *
@@ -190,6 +209,10 @@ public class RepoScm extends SCM {
      * @param quiet
      * 			  if this value is true,
      *            add "-q" options when excute "repo sync".
+     *
+     * @param dynamicTrigger
+     *            if not null, generate a gerrit-trigger dynamic trigger file
+     *            using this filename
      */
     @DataBoundConstructor
     public RepoScm(final String manifestRepositoryUrl,
@@ -197,7 +220,10 @@ public class RepoScm extends SCM {
             final String mirrorDir, final int jobs,
             final String localManifest, final String destinationDir,
             final String repoUrl,
-            final boolean currentBranch, final boolean quiet) {
+            final boolean currentBranch,
+            final boolean quiet,
+            final String dynamicTrigger
+            ) {
         this.manifestRepositoryUrl = manifestRepositoryUrl;
         this.manifestBranch = Util.fixEmptyAndTrim(manifestBranch);
         this.manifestFile = Util.fixEmptyAndTrim(manifestFile);
@@ -208,7 +234,8 @@ public class RepoScm extends SCM {
         this.currentBranch = currentBranch;
         this.quiet = quiet;
         this.repoUrl = Util.fixEmptyAndTrim(repoUrl);
-    }
+        this.dynamicTrigger = dynamicTrigger;
+            }
 
     @Override
     public SCMRevisionState calcRevisionsFromBuild(
@@ -254,8 +281,8 @@ public class RepoScm extends SCM {
                   }
 
                   final RevisionState currentState =
-                      new RevisionState(getStaticManifest(launcher, repoDir,
-                                  listener.getLogger()), manifestBranch,
+                      new RevisionState(getManifest(launcher, repoDir,
+                                  listener.getLogger(), true), manifestBranch,
                               listener.getLogger());
                   final Change change;
                   if (currentState.equals(myBaseline)) {
@@ -286,8 +313,21 @@ public class RepoScm extends SCM {
     if (!checkoutCode(launcher, repoDir, listener.getLogger())) {
         return false;
     }
+
+    if (dynamicTrigger != null) {
+        final String manifest = getManifest(launcher, repoDir, listener.getLogger(), false);
+        final String dynamicTriggerContent = createDynamicTrigger(manifest,  listener.getLogger());
+        final File outf = new File(workspace.child(dynamicTrigger).toString());
+        outf.createNewFile();
+        FileWriter out = new FileWriter(outf, false);
+        out.write(dynamicTriggerContent);
+        out.flush();
+        out.close();
+    }
+
+
     final String manifest =
-        getStaticManifest(launcher, repoDir, listener.getLogger());
+        getManifest(launcher, repoDir, listener.getLogger(), true);
     final RevisionState currentState =
         new RevisionState(manifest, manifestBranch,
                 listener.getLogger());
@@ -386,11 +426,13 @@ public class RepoScm extends SCM {
                 return false;
             }
         }
+
         return true;
     }
 
-    private String getStaticManifest(final Launcher launcher,
-            final FilePath workspace, final OutputStream logger)
+    private String getManifest(final Launcher launcher,
+            final FilePath workspace, final OutputStream logger,
+            final boolean makeStatic)
         throws IOException, InterruptedException {
         final ByteArrayOutputStream output = new ByteArrayOutputStream();
         final List<String> commands = new ArrayList<String>(6);
@@ -398,7 +440,9 @@ public class RepoScm extends SCM {
         commands.add("manifest");
         commands.add("-o");
         commands.add("-");
-        commands.add("-r");
+        if (makeStatic) {
+            commands.add("-r");
+        }
         // TODO: should we pay attention to the output from this?
         launcher.launch().stderr(logger).stdout(output).pwd(workspace)
             .cmds(commands).join();
@@ -417,6 +461,67 @@ public class RepoScm extends SCM {
             return lastState;
         }
         return getLastState(lastBuild.getPreviousBuild());
+    }
+
+    private String createDynamicTrigger(final String manifest, final PrintStream logger) {
+        StringBuilder ret = new StringBuilder();
+        try {
+            final InputSource xmlSource = new InputSource();
+            xmlSource.setCharacterStream(new StringReader(manifest));
+            final Document doc =
+                DocumentBuilderFactory.newInstance().newDocumentBuilder()
+                .parse(xmlSource);
+
+            if (!doc.getDocumentElement().getNodeName().equals("manifest")) {
+                logger.println("Error - malformed manifest");
+                return null;
+            }
+
+
+            String defaultRevision = null;
+            final NodeList defaultNodes = doc.getElementsByTagName("default");
+            if (defaultNodes.getLength() > 1) {
+                logger.println("Error - malformed manifest - can only have one <default> element");
+                return null;
+            }
+            if (defaultNodes.getLength() == 1) {
+                final Element defaultElement =  (Element) defaultNodes.item(0);
+                defaultRevision = Util.fixEmptyAndTrim(defaultElement.getAttribute("revision"));
+            }
+
+
+
+            final NodeList projectNodes = doc.getElementsByTagName("project");
+            final int numProjects = projectNodes.getLength();
+            for (int i = 0; i < numProjects; i++) {
+                final Element projectElement = (Element) projectNodes.item(i);
+                final String serverPath =
+                    Util.fixEmptyAndTrim(projectElement
+                            .getAttribute("name"));
+                String revision =
+                    Util.fixEmptyAndTrim(projectElement
+                            .getAttribute("revision"));
+
+
+                if (revision == null) {
+                    revision = defaultRevision;
+                }
+                if (revision == null || serverPath == null) {
+                    logger.println("Error - malformed manifest - revision or name missing at project element nr " + i);
+                    return null;
+                }
+
+                ret.append("p=" + serverPath + "\n");
+                ret.append("b=" + revision + "\n");
+                ret.append("f~.*\n");
+                ret.append("\n");
+
+            }
+        } catch (final Exception e) {
+            logger.println(e);
+            return null;
+        }
+        return ret.toString();
     }
 
     @Override
