@@ -62,429 +62,429 @@ import org.kohsuke.stapler.StaplerRequest;
  */
 public class RepoScm extends SCM {
 
-	private static Logger debug = Logger
-			.getLogger("hudson.plugins.repo.RepoScm");
+    private static Logger debug = Logger
+        .getLogger("hudson.plugins.repo.RepoScm");
 
-	private final String manifestRepositoryUrl;
+    private final String manifestRepositoryUrl;
 
-	// Advanced Fields:
-	private final String manifestBranch;
-	private final String manifestFile;
-	private final String repoUrl;
-	private final String mirrorDir;
-	private final int jobs;
-	private final String localManifest;
-	private final String destinationDir;
-	private final boolean currentBranch;
-	private final boolean quiet;
+    // Advanced Fields:
+    private final String manifestBranch;
+    private final String manifestFile;
+    private final String repoUrl;
+    private final String mirrorDir;
+    private final int jobs;
+    private final String localManifest;
+    private final String destinationDir;
+    private final boolean currentBranch;
+    private final boolean quiet;
 
-	/**
-	 * Returns the manifest repository URL.
-	 */
-	public String getManifestRepositoryUrl() {
-		return manifestRepositoryUrl;
-	}
+    /**
+     * Returns the manifest repository URL.
+     */
+    public String getManifestRepositoryUrl() {
+        return manifestRepositoryUrl;
+    }
 
-	/**
-	 * Returns the manifest branch name. By default, this is null and repo
-	 * defaults to "master".
-	 */
-	public String getManifestBranch() {
-		return manifestBranch;
-	}
+    /**
+     * Returns the manifest branch name. By default, this is null and repo
+     * defaults to "master".
+     */
+    public String getManifestBranch() {
+        return manifestBranch;
+    }
 
-	/**
-	 * Returns the initial manifest file name. By default, this is null and repo
-	 * defaults to "default.xml"
-	 */
-	public String getManifestFile() {
-		return manifestFile;
-	}
+    /**
+     * Returns the initial manifest file name. By default, this is null and repo
+     * defaults to "default.xml"
+     */
+    public String getManifestFile() {
+        return manifestFile;
+    }
 
-	/**
-	 * Returns the repo url. by default, this is null and
-	 * repo is fetched from aosp
-	 */
-	public String getRepoUrl() {
-		return repoUrl;
-	}
-	/**
-	 * Returns the name of the mirror directory. By default, this is null and
-	 * repo does not use a mirror.
-	 */
-	public String getMirrorDir() {
-		return mirrorDir;
-	}
+    /**
+     * Returns the repo url. by default, this is null and
+     * repo is fetched from aosp
+     */
+    public String getRepoUrl() {
+        return repoUrl;
+    }
+    /**
+     * Returns the name of the mirror directory. By default, this is null and
+     * repo does not use a mirror.
+     */
+    public String getMirrorDir() {
+        return mirrorDir;
+    }
 
-	/**
-	 * Returns the number of jobs used for sync. By default, this is null and
-	 * repo does not use concurrent jobs.
-	 */
-	public int getJobs() {
-		return jobs;
-	}
+    /**
+     * Returns the number of jobs used for sync. By default, this is null and
+     * repo does not use concurrent jobs.
+     */
+    public int getJobs() {
+        return jobs;
+    }
 
-	/**
-	 * Returns the contents of the local_manifest.xml. By default, this is null
-	 * and a local_manifest.xml is neither created nor modified.
-	 */
-	public String getLocalManifest() {
-		return localManifest;
-	}
+    /**
+     * Returns the contents of the local_manifest.xml. By default, this is null
+     * and a local_manifest.xml is neither created nor modified.
+     */
+    public String getLocalManifest() {
+        return localManifest;
+    }
 
-	/**
-	 * Returns the destination directory. By default, this is null and the
-	 * source is synced to the root of the workspace.
-	 */
-	public String getDestinationDir() {
-		return destinationDir;
-	}
+    /**
+     * Returns the destination directory. By default, this is null and the
+     * source is synced to the root of the workspace.
+     */
+    public String getDestinationDir() {
+        return destinationDir;
+    }
 
-	/**
-	 * Returns the value of currentBranch.
-	 */
-	public boolean isCurrentBranch() {
-		return currentBranch;
-	}
+    /**
+     * Returns the value of currentBranch.
+     */
+    public boolean isCurrentBranch() {
+        return currentBranch;
+    }
 
-	/**
-	 * Returns the value of quiet.
-	 */
-	public boolean isQuiet() {
-		return quiet;
-	}
+    /**
+     * Returns the value of quiet.
+     */
+    public boolean isQuiet() {
+        return quiet;
+    }
 
-	/**
-	 * The constructor takes in user parameters and sets them. Each job using
-	 * the RepoSCM will call this constructor.
-	 *
-	 * @param manifestRepositoryUrl
-	 *            The URL for the manifest repository.
-	 * @param manifestBranch
-	 *            The branch of the manifest repository. Typically this is null
-	 *            or the empty string, which will cause repo to default to
-	 *            "master".
-	 * @param manifestFile
-	 *            The file to use as the repository manifest. Typically this is
-	 *            null which will cause repo to use the default of "default.xml"
-	 * @param mirrorDir
-	 *            The path of the mirror directory to reference when
-	 *            initializing repo.
-	 * @param jobs
-	 *            The number of concurrent jobs to use for the sync command. If
-	 *            this is 0 or negative the jobs parameter is not specified.
-	 * @param localManifest
-	 *            May be null, a string containing XML, or an URL.
-	 *            If XML, this string is written to .repo/local_manifest.xml
-	 *            If an URL, the URL is fetched and the content is written
-	 *            to .repo/local_manifest.xml
-	 * @param destinationDir
-	 *            If not null then the source is synced to the destinationDir
-	 *            subdirectory of the workspace.
-	 * @param repoUrl
-	 *            If not null then use this url as repo base,
+    /**
+     * The constructor takes in user parameters and sets them. Each job using
+     * the RepoSCM will call this constructor.
+     *
+     * @param manifestRepositoryUrl
+     *            The URL for the manifest repository.
+     * @param manifestBranch
+     *            The branch of the manifest repository. Typically this is null
+     *            or the empty string, which will cause repo to default to
+     *            "master".
+     * @param manifestFile
+     *            The file to use as the repository manifest. Typically this is
+     *            null which will cause repo to use the default of "default.xml"
+     * @param mirrorDir
+     *            The path of the mirror directory to reference when
+     *            initializing repo.
+     * @param jobs
+     *            The number of concurrent jobs to use for the sync command. If
+     *            this is 0 or negative the jobs parameter is not specified.
+     * @param localManifest
+     *            May be null, a string containing XML, or an URL.
+     *            If XML, this string is written to .repo/local_manifest.xml
+     *            If an URL, the URL is fetched and the content is written
+     *            to .repo/local_manifest.xml
+     * @param destinationDir
+     *            If not null then the source is synced to the destinationDir
+     *            subdirectory of the workspace.
+     * @param repoUrl
+     *            If not null then use this url as repo base,
      *            instead of the default
-	 * @param currentBranch
-	 * 			  if this value is true,
-	 *            add "-c" options when excute "repo sync".
-	 * @param quiet
-	 * 			  if this value is true,
-	 *            add "-q" options when excute "repo sync".
-	 */
-	@DataBoundConstructor
-	public RepoScm(final String manifestRepositoryUrl,
-			final String manifestBranch, final String manifestFile,
-			final String mirrorDir, final int jobs,
-			final String localManifest, final String destinationDir,
+     * @param currentBranch
+     * 			  if this value is true,
+     *            add "-c" options when excute "repo sync".
+     * @param quiet
+     * 			  if this value is true,
+     *            add "-q" options when excute "repo sync".
+     */
+    @DataBoundConstructor
+    public RepoScm(final String manifestRepositoryUrl,
+            final String manifestBranch, final String manifestFile,
+            final String mirrorDir, final int jobs,
+            final String localManifest, final String destinationDir,
             final String repoUrl,
-			final boolean currentBranch, final boolean quiet) {
-		this.manifestRepositoryUrl = manifestRepositoryUrl;
-		this.manifestBranch = Util.fixEmptyAndTrim(manifestBranch);
-		this.manifestFile = Util.fixEmptyAndTrim(manifestFile);
-		this.mirrorDir = Util.fixEmptyAndTrim(mirrorDir);
-		this.jobs = jobs;
-		this.localManifest = Util.fixEmptyAndTrim(localManifest);
-		this.destinationDir = Util.fixEmptyAndTrim(destinationDir);
-		this.currentBranch = currentBranch;
-		this.quiet = quiet;
-		this.repoUrl = Util.fixEmptyAndTrim(repoUrl);
-	}
+            final boolean currentBranch, final boolean quiet) {
+        this.manifestRepositoryUrl = manifestRepositoryUrl;
+        this.manifestBranch = Util.fixEmptyAndTrim(manifestBranch);
+        this.manifestFile = Util.fixEmptyAndTrim(manifestFile);
+        this.mirrorDir = Util.fixEmptyAndTrim(mirrorDir);
+        this.jobs = jobs;
+        this.localManifest = Util.fixEmptyAndTrim(localManifest);
+        this.destinationDir = Util.fixEmptyAndTrim(destinationDir);
+        this.currentBranch = currentBranch;
+        this.quiet = quiet;
+        this.repoUrl = Util.fixEmptyAndTrim(repoUrl);
+    }
 
-	@Override
-	public SCMRevisionState calcRevisionsFromBuild(
-			final AbstractBuild<?, ?> build, final Launcher launcher,
-			final TaskListener listener) throws IOException,
-			InterruptedException {
-		// We add our SCMRevisionState from within checkout, so this shouldn't
-		// be called often. However it will be called if this is the first
-		// build, if a build was aborted before it reported the repository
-		// state, etc.
-		return null;
-	}
+    @Override
+    public SCMRevisionState calcRevisionsFromBuild(
+            final AbstractBuild<?, ?> build, final Launcher launcher,
+            final TaskListener listener) throws IOException,
+           InterruptedException {
+               // We add our SCMRevisionState from within checkout, so this shouldn't
+               // be called often. However it will be called if this is the first
+               // build, if a build was aborted before it reported the repository
+               // state, etc.
+               return null;
+            }
 
-	@Override
-	protected PollingResult compareRemoteRevisionWith(
-			final AbstractProject<?, ?> project, final Launcher launcher,
-			final FilePath workspace, final TaskListener listener,
-			final SCMRevisionState baseline) throws IOException,
-			InterruptedException {
-		SCMRevisionState myBaseline = baseline;
-		if (myBaseline == null) {
-			// Probably the first build, or possibly an aborted build.
-			myBaseline = getLastState(project.getLastBuild());
-			if (myBaseline == null) {
-				return PollingResult.BUILD_NOW;
-			}
-		}
+    @Override
+    protected PollingResult compareRemoteRevisionWith(
+            final AbstractProject<?, ?> project, final Launcher launcher,
+            final FilePath workspace, final TaskListener listener,
+            final SCMRevisionState baseline) throws IOException,
+              InterruptedException {
+                  SCMRevisionState myBaseline = baseline;
+                  if (myBaseline == null) {
+                      // Probably the first build, or possibly an aborted build.
+                      myBaseline = getLastState(project.getLastBuild());
+                      if (myBaseline == null) {
+                          return PollingResult.BUILD_NOW;
+                      }
+                  }
 
-		FilePath repoDir;
-		if (destinationDir != null) {
-			repoDir = workspace.child(destinationDir);
-			if (!repoDir.isDirectory()) {
-				repoDir.mkdirs();
-			}
-		} else {
-			repoDir = workspace;
-		}
+                  FilePath repoDir;
+                  if (destinationDir != null) {
+                      repoDir = workspace.child(destinationDir);
+                      if (!repoDir.isDirectory()) {
+                          repoDir.mkdirs();
+                      }
+                  } else {
+                      repoDir = workspace;
+                  }
 
-		if (!checkoutCode(launcher, repoDir, listener.getLogger())) {
-			// Some error occurred, try a build now so it gets logged.
-			return new PollingResult(myBaseline, myBaseline,
-					Change.INCOMPARABLE);
-		}
+                  if (!checkoutCode(launcher, repoDir, listener.getLogger())) {
+                      // Some error occurred, try a build now so it gets logged.
+                      return new PollingResult(myBaseline, myBaseline,
+                              Change.INCOMPARABLE);
+                  }
 
-		final RevisionState currentState =
-				new RevisionState(getStaticManifest(launcher, repoDir,
-						listener.getLogger()), manifestBranch,
-						listener.getLogger());
-		final Change change;
-		if (currentState.equals(myBaseline)) {
-			change = Change.NONE;
-		} else {
-			change = Change.SIGNIFICANT;
-		}
-		return new PollingResult(myBaseline, currentState, change);
-	}
+                  final RevisionState currentState =
+                      new RevisionState(getStaticManifest(launcher, repoDir,
+                                  listener.getLogger()), manifestBranch,
+                              listener.getLogger());
+                  final Change change;
+                  if (currentState.equals(myBaseline)) {
+                      change = Change.NONE;
+                  } else {
+                      change = Change.SIGNIFICANT;
+                  }
+                  return new PollingResult(myBaseline, currentState, change);
+            }
 
-	@Override
-	public boolean checkout(
-			@SuppressWarnings("rawtypes") final AbstractBuild build,
-			final Launcher launcher, final FilePath workspace,
-			final BuildListener listener, final File changelogFile)
-			throws IOException, InterruptedException {
+    @Override
+    public boolean checkout(
+            @SuppressWarnings("rawtypes") final AbstractBuild build,
+            final Launcher launcher, final FilePath workspace,
+            final BuildListener listener, final File changelogFile)
+    throws IOException, InterruptedException {
 
-		FilePath repoDir;
-		if (destinationDir != null) {
-			repoDir = workspace.child(destinationDir);
-			if (!repoDir.isDirectory()) {
-				repoDir.mkdirs();
-			}
-		} else {
-			repoDir = workspace;
-		}
+    FilePath repoDir;
+    if (destinationDir != null) {
+        repoDir = workspace.child(destinationDir);
+        if (!repoDir.isDirectory()) {
+            repoDir.mkdirs();
+        }
+    } else {
+        repoDir = workspace;
+    }
 
-		if (!checkoutCode(launcher, repoDir, listener.getLogger())) {
-			return false;
-		}
-		final String manifest =
-				getStaticManifest(launcher, repoDir, listener.getLogger());
-		final RevisionState currentState =
-				new RevisionState(manifest, manifestBranch,
-						listener.getLogger());
-		build.addAction(currentState);
-		final RevisionState previousState =
-				getLastState(build.getPreviousBuild());
+    if (!checkoutCode(launcher, repoDir, listener.getLogger())) {
+        return false;
+    }
+    final String manifest =
+        getStaticManifest(launcher, repoDir, listener.getLogger());
+    final RevisionState currentState =
+        new RevisionState(manifest, manifestBranch,
+                listener.getLogger());
+    build.addAction(currentState);
+    final RevisionState previousState =
+        getLastState(build.getPreviousBuild());
 
-		ChangeLog.saveChangeLog(currentState, previousState, changelogFile,
-				launcher, repoDir);
-		build.addAction(new TagAction(build));
-		return true;
-	}
+    ChangeLog.saveChangeLog(currentState, previousState, changelogFile,
+            launcher, repoDir);
+    build.addAction(new TagAction(build));
+    return true;
+            }
 
-	private int doSync(final Launcher launcher, final FilePath workspace,
-			final OutputStream logger)
-		throws IOException, InterruptedException {
-		final List<String> commands = new ArrayList<String>(4);
-		debug.log(Level.FINE, "Syncing out code in: " + workspace.getName());
-		commands.clear();
-		commands.add(getDescriptor().getExecutable());
-		commands.add("sync");
-		commands.add("-d");
-		if (isCurrentBranch()) {
-			commands.add("-c");
-		}
-		if (isQuiet()) {
-			commands.add("-q");
-		}
-		if (jobs > 0) {
-			commands.add("--jobs=" + jobs);
-		}
-		int returnCode =
-				launcher.launch().stdout(logger).pwd(workspace)
-						.cmds(commands).join();
-		return returnCode;
-	}
+    private int doSync(final Launcher launcher, final FilePath workspace,
+            final OutputStream logger)
+        throws IOException, InterruptedException {
+        final List<String> commands = new ArrayList<String>(4);
+        debug.log(Level.FINE, "Syncing out code in: " + workspace.getName());
+        commands.clear();
+        commands.add(getDescriptor().getExecutable());
+        commands.add("sync");
+        commands.add("-d");
+        if (isCurrentBranch()) {
+            commands.add("-c");
+        }
+        if (isQuiet()) {
+            commands.add("-q");
+        }
+        if (jobs > 0) {
+            commands.add("--jobs=" + jobs);
+        }
+        int returnCode =
+            launcher.launch().stdout(logger).pwd(workspace)
+            .cmds(commands).join();
+        return returnCode;
+    }
 
-	private boolean checkoutCode(final Launcher launcher,
-			final FilePath workspace, final OutputStream logger)
-			throws IOException, InterruptedException {
-		final List<String> commands = new ArrayList<String>(4);
+    private boolean checkoutCode(final Launcher launcher,
+            final FilePath workspace, final OutputStream logger)
+        throws IOException, InterruptedException {
+        final List<String> commands = new ArrayList<String>(4);
 
-		debug.log(Level.INFO, "Checking out code in: " + workspace.getName());
+        debug.log(Level.INFO, "Checking out code in: " + workspace.getName());
 
-		commands.add(getDescriptor().getExecutable());
-		commands.add("init");
-		commands.add("-u");
-		commands.add(manifestRepositoryUrl);
-		if (manifestBranch != null) {
-			commands.add("-b");
-			commands.add(manifestBranch);
-		}
-		if (manifestFile != null) {
-			commands.add("-m");
-			commands.add(manifestFile);
-		}
-		if (mirrorDir != null) {
-			commands.add("--reference=" + mirrorDir);
-		}
-		if (repoUrl != null) {
-			commands.add("--repo-url=" + repoUrl);
-			commands.add("--no-repo-verify");
-		}
-		int returnCode =
-				launcher.launch().stdout(logger).pwd(workspace)
-						.cmds(commands).join();
-		if (returnCode != 0) {
-			return false;
-		}
-		if (workspace != null) {
-			FilePath rdir = workspace.child(".repo");
-			FilePath lm = rdir.child("local_manifest.xml");
-			lm.delete();
-			if (localManifest != null) {
-				if (localManifest.startsWith("<?xml")) {
-					lm.write(localManifest, null);
-				} else {
-					URL url = new URL(localManifest);
-					lm.copyFrom(url);
-				}
-			}
-		}
+        commands.add(getDescriptor().getExecutable());
+        commands.add("init");
+        commands.add("-u");
+        commands.add(manifestRepositoryUrl);
+        if (manifestBranch != null) {
+            commands.add("-b");
+            commands.add(manifestBranch);
+        }
+        if (manifestFile != null) {
+            commands.add("-m");
+            commands.add(manifestFile);
+        }
+        if (mirrorDir != null) {
+            commands.add("--reference=" + mirrorDir);
+        }
+        if (repoUrl != null) {
+            commands.add("--repo-url=" + repoUrl);
+            commands.add("--no-repo-verify");
+        }
+        int returnCode =
+            launcher.launch().stdout(logger).pwd(workspace)
+            .cmds(commands).join();
+        if (returnCode != 0) {
+            return false;
+        }
+        if (workspace != null) {
+            FilePath rdir = workspace.child(".repo");
+            FilePath lm = rdir.child("local_manifest.xml");
+            lm.delete();
+            if (localManifest != null) {
+                if (localManifest.startsWith("<?xml")) {
+                    lm.write(localManifest, null);
+                } else {
+                    URL url = new URL(localManifest);
+                    lm.copyFrom(url);
+                }
+            }
+        }
 
-		returnCode = doSync(launcher, workspace, logger);
-		if (returnCode != 0) {
-			debug.log(Level.WARNING, "Sync failed. Resetting repository");
-			commands.clear();
-			commands.add(getDescriptor().getExecutable());
-			commands.add("forall");
-			commands.add("-c");
-			commands.add("git reset --hard");
-			launcher.launch().stdout(logger).pwd(workspace).cmds(commands)
-				.join();
-			returnCode = doSync(launcher, workspace, logger);
-			if (returnCode != 0) {
-				return false;
-			}
-		}
-		return true;
-	}
+        returnCode = doSync(launcher, workspace, logger);
+        if (returnCode != 0) {
+            debug.log(Level.WARNING, "Sync failed. Resetting repository");
+            commands.clear();
+            commands.add(getDescriptor().getExecutable());
+            commands.add("forall");
+            commands.add("-c");
+            commands.add("git reset --hard");
+            launcher.launch().stdout(logger).pwd(workspace).cmds(commands)
+                .join();
+            returnCode = doSync(launcher, workspace, logger);
+            if (returnCode != 0) {
+                return false;
+            }
+        }
+        return true;
+    }
 
-	private String getStaticManifest(final Launcher launcher,
-			final FilePath workspace, final OutputStream logger)
-			throws IOException, InterruptedException {
-		final ByteArrayOutputStream output = new ByteArrayOutputStream();
-		final List<String> commands = new ArrayList<String>(6);
-		commands.add(getDescriptor().getExecutable());
-		commands.add("manifest");
-		commands.add("-o");
-		commands.add("-");
-		commands.add("-r");
-		// TODO: should we pay attention to the output from this?
-		launcher.launch().stderr(logger).stdout(output).pwd(workspace)
-				.cmds(commands).join();
-		final String manifestText = output.toString();
-		debug.log(Level.FINEST, manifestText);
-		return manifestText;
-	}
+    private String getStaticManifest(final Launcher launcher,
+            final FilePath workspace, final OutputStream logger)
+        throws IOException, InterruptedException {
+        final ByteArrayOutputStream output = new ByteArrayOutputStream();
+        final List<String> commands = new ArrayList<String>(6);
+        commands.add(getDescriptor().getExecutable());
+        commands.add("manifest");
+        commands.add("-o");
+        commands.add("-");
+        commands.add("-r");
+        // TODO: should we pay attention to the output from this?
+        launcher.launch().stderr(logger).stdout(output).pwd(workspace)
+            .cmds(commands).join();
+        final String manifestText = output.toString();
+        debug.log(Level.FINEST, manifestText);
+        return manifestText;
+    }
 
-	private RevisionState getLastState(final Run<?, ?> lastBuild) {
-		if (lastBuild == null) {
-			return null;
-		}
-		final RevisionState lastState =
-				lastBuild.getAction(RevisionState.class);
-		if (lastState != null && lastState.getBranch() == manifestBranch) {
-			return lastState;
-		}
-		return getLastState(lastBuild.getPreviousBuild());
-	}
+    private RevisionState getLastState(final Run<?, ?> lastBuild) {
+        if (lastBuild == null) {
+            return null;
+        }
+        final RevisionState lastState =
+            lastBuild.getAction(RevisionState.class);
+        if (lastState != null && lastState.getBranch() == manifestBranch) {
+            return lastState;
+        }
+        return getLastState(lastBuild.getPreviousBuild());
+    }
 
-	@Override
-	public ChangeLogParser createChangeLogParser() {
-		return new ChangeLog();
-	}
+    @Override
+    public ChangeLogParser createChangeLogParser() {
+        return new ChangeLog();
+    }
 
-	@Override
-	public DescriptorImpl getDescriptor() {
-		return (DescriptorImpl) super.getDescriptor();
-	}
+    @Override
+    public DescriptorImpl getDescriptor() {
+        return (DescriptorImpl) super.getDescriptor();
+    }
 
-	/**
-	 * A DescriptorImpl contains variables used server-wide. In our case, we
-	 * only store the path to the repo executable, which defaults to just
-	 * "repo". This class also handles some Jenkins housekeeping.
-	 */
-	@Extension
-	public static class DescriptorImpl extends SCMDescriptor<RepoScm> {
-		private String repoExecutable;
+    /**
+     * A DescriptorImpl contains variables used server-wide. In our case, we
+     * only store the path to the repo executable, which defaults to just
+     * "repo". This class also handles some Jenkins housekeeping.
+     */
+    @Extension
+    public static class DescriptorImpl extends SCMDescriptor<RepoScm> {
+        private String repoExecutable;
 
-		/**
-		 * Call the superclass constructor and load our configuration from the
-		 * file system.
-		 */
-		public DescriptorImpl() {
-			super(null);
-			load();
-		}
+        /**
+         * Call the superclass constructor and load our configuration from the
+         * file system.
+         */
+        public DescriptorImpl() {
+            super(null);
+            load();
+        }
 
-		@Override
-		public String getDisplayName() {
-			return "Gerrit Repo";
-		}
+        @Override
+        public String getDisplayName() {
+            return "Gerrit Repo";
+        }
 
-		@Override
-		public boolean configure(final StaplerRequest req,
-				final JSONObject json)
-				throws hudson.model.Descriptor.FormException {
-			repoExecutable =
-					Util.fixEmptyAndTrim(json.getString("executable"));
-			save();
-			return super.configure(req, json);
-		}
+        @Override
+        public boolean configure(final StaplerRequest req,
+                final JSONObject json)
+        throws hudson.model.Descriptor.FormException {
+        repoExecutable =
+            Util.fixEmptyAndTrim(json.getString("executable"));
+        save();
+        return super.configure(req, json);
+        }
 
-		/**
-		 * Check that the specified parameter exists on the file system and is a
-		 * valid executable.
-		 *
-		 * @param value
-		 *            A path to an executable on the file system.
-		 * @return Error if the file doesn't exist, otherwise return OK.
-		 */
-		public FormValidation doExecutableCheck(
-				@QueryParameter final String value) {
-			return FormValidation.validateExecutable(value);
-		}
+        /**
+         * Check that the specified parameter exists on the file system and is a
+         * valid executable.
+         *
+         * @param value
+         *            A path to an executable on the file system.
+         * @return Error if the file doesn't exist, otherwise return OK.
+         */
+        public FormValidation doExecutableCheck(
+                @QueryParameter final String value) {
+            return FormValidation.validateExecutable(value);
+                }
 
-		/**
-		 * Returns the command to use when running repo. By default, we assume
-		 * that repo is in the server's PATH and just return "repo".
-		 */
-		public String getExecutable() {
-			if (repoExecutable == null) {
-				return "repo";
-			} else {
-				return repoExecutable;
-			}
-		}
-	}
+        /**
+         * Returns the command to use when running repo. By default, we assume
+         * that repo is in the server's PATH and just return "repo".
+         */
+        public String getExecutable() {
+            if (repoExecutable == null) {
+                return "repo";
+            } else {
+                return repoExecutable;
+            }
+        }
+    }
 }
