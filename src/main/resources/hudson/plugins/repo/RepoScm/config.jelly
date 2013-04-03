@@ -24,6 +24,10 @@
 			<f:textbox name="repo.destinationDir" value="${scm.destinationDir}"/>
 		</f:entry>
 
+		<f:entry title="Repo Url" help="/plugin/repo/help-repoUrl.html">
+			<f:textbox name="repo.repoUrl" value="${scm.repoUrl}"/>
+		</f:entry>
+
 		<f:entry title="Mirror Directory" help="/plugin/repo/help-mirrorDir.html">
 			<f:textbox name="repo.mirrorDir" value="${scm.mirrorDir}"/>
 		</f:entry>
@@ -44,6 +48,10 @@
 
 		<f:entry title="Local Manifest" help="/plugin/repo/help-localManifest.html">
 			<f:textarea name="repo.localManifest" value="${scm.localManifest}" rows="10" />
+		</f:entry>
+
+		<f:entry title="Generate Dynamic Trigger" help="/plugin/repo/help-dynamicTrigger.html">
+			<f:textbox name="repo.dynamicTrigger" value="${scm.dynamicTrigger}"/>
 		</f:entry>
 
 	</f:advanced>
