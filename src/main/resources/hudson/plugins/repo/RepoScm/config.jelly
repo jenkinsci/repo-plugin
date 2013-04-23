@@ -50,5 +50,19 @@
 			<f:textarea name="repo.localManifest" value="${scm.localManifest}" rows="10" />
 		</f:entry>
 
+		<f:entry title="Polling and parametrization" help="/plugin/repo/help-pollingAndParameters.html">
+			<f:radio name="repo.behaviour" value="polling"
+			         checked="${scm.pollingEnabled}" id="behaviour.polling"/>
+			<label for="behaviour.polling">Enable polling</label>
+			<st:nbsp />
+			<f:radio name="repo.behaviour" value="parameters"
+			         checked="${scm.parametersEnabled}" id="behaviour.parameters"/>
+			<label for="behaviour.parameters">Enable parameters</label>
+			<st:nbsp />
+			<f:radio name="repo.behaviour" value="neither"
+			         checked="${!scm.parametersEnabled and !scm.pollingEnabled}" id="behaviour.neither" />
+			<label for="behaviour.neither">Disable both</label>
+		</f:entry>
+
 	</f:advanced>
 </j:jelly>

@@ -27,6 +27,7 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Util;
+import hudson.EnvVars;
 import hudson.model.BuildListener;
 import hudson.model.TaskListener;
 import hudson.model.AbstractBuild;
@@ -78,6 +79,8 @@ public class RepoScm extends SCM {
 	private final String destinationDir;
 	private final boolean currentBranch;
 	private final boolean quiet;
+	private final boolean supportsPolling;
+	private final boolean supportsParameters;
 
 	/**
 	 * Returns the manifest repository URL.
@@ -157,6 +160,20 @@ public class RepoScm extends SCM {
 	}
 
 	/**
+	 * Returns true if polling support is enabled.	By default, it is not.
+	 */
+	public boolean getPollingEnabled() {
+		return supportsPolling;
+	}
+
+	/**
+	 * Returns true if parameters support is enabled.  By default, it is not.
+	 */
+	public boolean getParametersEnabled() {
+		return supportsParameters;
+	}
+
+	/**
 	 * The constructor takes in user parameters and sets them. Each job using
 	 * the RepoSCM will call this constructor.
 	 *
@@ -193,13 +210,17 @@ public class RepoScm extends SCM {
 	 * @param quiet
 	 * 			  if this value is true,
 	 *            add "-q" options when excute "repo sync".
+	 * @param behaviour
+	 *            The desired behaviour, "polling", "parameters", or "neither".
 	 */
+	//CS IGNORE ParameterNumberCheck FOR NEXT 6 LINES. REASON: It makes sense to have more parameters here
 	@DataBoundConstructor
 	public RepoScm(final String manifestRepositoryUrl,
 			final String manifestBranch, final String manifestFile,
 			final String manifestGroup, final String mirrorDir, final int jobs,
 			final String localManifest, final String destinationDir,
-			final boolean currentBranch, final boolean quiet) {
+			final boolean currentBranch, final boolean quiet,
+			final String behaviour) {
 		this.manifestRepositoryUrl = manifestRepositoryUrl;
 		this.manifestBranch = Util.fixEmptyAndTrim(manifestBranch);
 		this.manifestGroup = Util.fixEmptyAndTrim(manifestGroup);
@@ -210,15 +231,47 @@ public class RepoScm extends SCM {
 		this.destinationDir = Util.fixEmptyAndTrim(destinationDir);
 		this.currentBranch = currentBranch;
 		this.quiet = quiet;
+		if (behaviour.equals("polling")) {
+			this.supportsPolling = true;
+			this.supportsParameters = false;
+		} else if (behaviour.equals("parameters")) {
+			this.supportsPolling = false;
+			this.supportsParameters = true;
+		} else {
+			this.supportsPolling = false;
+			this.supportsParameters = false;
+		}
 		// TODO: repoUrl
 		this.repoUrl = null;
 	}
+
+	private FilePath getRepoDir(final FilePath workspace)
+		throws IOException, InterruptedException {
+		if (workspace == null) {
+			throw new IOException("getRepoDir: no workspace defined");
+		}
+
+		final FilePath repoDir;
+		if (destinationDir != null) {
+			repoDir = workspace.child(destinationDir);
+			if (!repoDir.isDirectory()) {
+				repoDir.mkdirs();
+			}
+		} else {
+			repoDir = workspace;
+		}
+		return repoDir;
+	}
+
 
 	@Override
 	public SCMRevisionState calcRevisionsFromBuild(
 			final AbstractBuild<?, ?> build, final Launcher launcher,
 			final TaskListener listener) throws IOException,
 			InterruptedException {
+		if (!getPollingEnabled()) {
+			throw new InterruptedException("Polling mode not enabled.");
+		}
 		// We add our SCMRevisionState from within checkout, so this shouldn't
 		// be called often. However it will be called if this is the first
 		// build, if a build was aborted before it reported the repository
@@ -232,6 +285,9 @@ public class RepoScm extends SCM {
 			final FilePath workspace, final TaskListener listener,
 			final SCMRevisionState baseline) throws IOException,
 			InterruptedException {
+		if (!getPollingEnabled()) {
+			throw new InterruptedException("Polling mode not enabled.");
+		}
 		SCMRevisionState myBaseline = baseline;
 		if (myBaseline == null) {
 			// Probably the first build, or possibly an aborted build.
@@ -241,17 +297,9 @@ public class RepoScm extends SCM {
 			}
 		}
 
-		FilePath repoDir;
-		if (destinationDir != null) {
-			repoDir = workspace.child(destinationDir);
-			if (!repoDir.isDirectory()) {
-				repoDir.mkdirs();
-			}
-		} else {
-			repoDir = workspace;
-		}
+		final FilePath repoDir = getRepoDir(workspace);
 
-		if (!checkoutCode(launcher, repoDir, listener.getLogger())) {
+		if (!checkoutCode(launcher, repoDir, listener.getLogger(), null)) {
 			// Some error occurred, try a build now so it gets logged.
 			return new PollingResult(myBaseline, myBaseline,
 					Change.INCOMPARABLE);
@@ -277,17 +325,10 @@ public class RepoScm extends SCM {
 			final BuildListener listener, final File changelogFile)
 			throws IOException, InterruptedException {
 
-		FilePath repoDir;
-		if (destinationDir != null) {
-			repoDir = workspace.child(destinationDir);
-			if (!repoDir.isDirectory()) {
-				repoDir.mkdirs();
-			}
-		} else {
-			repoDir = workspace;
-		}
+		FilePath repoDir = getRepoDir(workspace);
 
-		if (!checkoutCode(launcher, repoDir, listener.getLogger())) {
+		if (!checkoutCode(launcher, repoDir, listener.getLogger(),
+		                  build.getEnvironment(listener))) {
 			return false;
 		}
 		final String manifest =
@@ -329,8 +370,17 @@ public class RepoScm extends SCM {
 		return returnCode;
 	}
 
+	private String expand(final EnvVars env, final String string) {
+		if (getParametersEnabled()) {
+			return env.expand(string);
+		} else {
+			return string;
+		}
+	}
+
 	private boolean checkoutCode(final Launcher launcher,
-			final FilePath workspace, final OutputStream logger)
+			final FilePath workspace, final OutputStream logger,
+			final EnvVars env)
 			throws IOException, InterruptedException {
 		final List<String> commands = new ArrayList<String>(4);
 
@@ -339,20 +389,20 @@ public class RepoScm extends SCM {
 		commands.add(getDescriptor().getExecutable());
 		commands.add("init");
 		commands.add("-u");
-		commands.add(manifestRepositoryUrl);
+		commands.add(expand(env, manifestRepositoryUrl));
 		if (manifestBranch != null) {
 			commands.add("-b");
-			commands.add(manifestBranch);
+			commands.add(expand(env, manifestBranch));
 		}
 		if (manifestFile != null) {
 			commands.add("-m");
-			commands.add(manifestFile);
+			commands.add(expand(env, manifestFile));
 		}
 		if (mirrorDir != null) {
-			commands.add("--reference=" + mirrorDir);
+			commands.add("--reference=" + expand(env, mirrorDir));
 		}
 		if (repoUrl != null) {
-			commands.add("--repo-url=" + repoUrl);
+			commands.add("--repo-url=" + expand(env, repoUrl));
 			commands.add("--no-repo-verify");
 		}
 		if (manifestGroup != null) {
@@ -370,10 +420,11 @@ public class RepoScm extends SCM {
 			FilePath lm = rdir.child("local_manifest.xml");
 			lm.delete();
 			if (localManifest != null) {
-				if (localManifest.startsWith("<?xml")) {
-					lm.write(localManifest, null);
+				final String lmContent = expand(env, localManifest);
+				if (lmContent.startsWith("<?xml")) {
+					lm.write(lmContent, null);
 				} else {
-					URL url = new URL(localManifest);
+					URL url = new URL(lmContent);
 					lm.copyFrom(url);
 				}
 			}

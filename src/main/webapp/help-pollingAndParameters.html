@@ -1,0 +1,17 @@
+<div>
+  <p>Control polling and parametrization support.  By default both are disabled.</p>
+  <p>When polling is enabled, you can enable the Jenkins SCM polling
+     option to make Jenkins to periodically check against changes in
+     the repo.  This is a relatively expensive operation, though.
+  <p>When parameters are enabled, parameters and other environment
+     variables can be used when defining the repository url, branch,
+     manifest file, mirror directory, jobs, and local manifest.
+     The parameters can be used anywhere within the text, so that you
+     can e.g. construct the <code>local_manifest.xml</code> content
+     from several bits and pieces.</p>
+  <p>Please note that polling and parametrizing are incompatible at
+     the moment.  If you enable parameters, then any attempt to use
+     polling will cause a run time error, and if you enable polling,
+     then any environment variables in the input fields will be
+     taken literally and not expanded.</p>
+</div>
