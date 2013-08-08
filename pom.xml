@@ -64,15 +64,19 @@
           <extensions>true</extensions>
           <executions>
             <execution>
+            	<id>default</id>
                 <phase>default</phase>
             </execution>
             <execution>
+                <id>package</id>
                 <phase>package</phase>
             </execution>
             <execution>
+                <id>generate-test-sources</id>
                 <phase>generate-test-sources</phase>
             </execution>
             <execution>
+                <id>validate</id>
                 <phase>validate</phase>
             </execution>
           </executions>
