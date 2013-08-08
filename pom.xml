@@ -66,6 +66,15 @@
             <execution>
                 <phase>default</phase>
             </execution>
+            <execution>
+                <phase>package</phase>
+            </execution>
+            <execution>
+                <phase>generate-test-sources</phase>
+            </execution>
+            <execution>
+                <phase>validate</phase>
+            </execution>
           </executions>
       </plugin>
       <plugin>
