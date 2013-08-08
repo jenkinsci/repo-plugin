@@ -62,6 +62,11 @@
           <artifactId>maven-hpi-plugin</artifactId>
           <version>1.96</version>
           <extensions>true</extensions>
+          <executions>
+            <execution>
+                <phase>default</phase>
+            </execution>
+          </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
