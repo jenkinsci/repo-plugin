@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>1.466</version><!-- which version of Hudson is this plugin built against? -->
+    <version>1.525</version><!-- which version of Hudson is this plugin built against? -->
   </parent>
 
   <groupId>org.jenkins-ci.plugins</groupId>
@@ -57,30 +57,6 @@
 
   <build>
     <plugins>
-      <plugin>
-          <groupId>org.jenkins-ci.tools</groupId>
-          <artifactId>maven-hpi-plugin</artifactId>
-          <version>1.96</version>
-          <extensions>true</extensions>
-          <executions>
-            <execution>
-            	<id>default</id>
-                <phase>default</phase>
-            </execution>
-            <execution>
-                <id>package</id>
-                <phase>package</phase>
-            </execution>
-            <execution>
-                <id>generate-test-sources</id>
-                <phase>generate-test-sources</phase>
-            </execution>
-            <execution>
-                <id>validate</id>
-                <phase>validate</phase>
-            </execution>
-          </executions>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-release-plugin</artifactId>
