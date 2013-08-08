@@ -1,0 +1,24 @@
+<div>
+   <p>
+	 if <code>true</code> then the build will set environment
+     variables for each project in the repo. The project name
+     will be used as the key and the value will be set to the
+     revision number of the project. The project name will be
+     converted to a valid environment variable.
+     <h4>Example</h4>
+     Lets assume that we have a manifest with 3 repositories:
+     <ul>
+        <li><code>core</code></li>
+        <li><code>common</code></li>
+        <li><code>app</code></li>
+     </ul>
+     Then the plugin will create the following environment 
+     variables:
+     <ul>
+        <li><code>REPO_REV_CORE=8e52f38771c3163ec67ae32a6d35364e720ef3a8</code></li>
+        <li><code>REPO_REV_COMMON=f41af34f824a690463e157a4d2c531fa63ce6cc8</code></li>
+        <li><code>REPO_REV_APP=fdf57f76eb5cb9bd351552f7bf85be3987427918</code></li>
+     </ul>
+     
+  </p>
+</div>

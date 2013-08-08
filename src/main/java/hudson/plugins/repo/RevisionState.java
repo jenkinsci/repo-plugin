@@ -118,6 +118,16 @@ public class RevisionState extends SCMRevisionState implements Serializable {
 		}
 	}
 
+	/**
+	 * Returns all listed projects along with their state.
+	 * @return the list of projects keyed by the project name,
+	 * 		the value is the project state containing the actual
+	 * 		SHA1 IDs etc.
+	 */
+	public Map<String, ProjectState> getProjects() {
+		return projects;
+	}
+
 	@Override
 	public boolean equals(final Object obj) {
 		if (obj instanceof RevisionState) {
