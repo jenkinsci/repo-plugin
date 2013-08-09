@@ -55,6 +55,7 @@ import java.util.logging.Logger;
 
 import net.sf.json.JSONObject;
 
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -510,7 +511,8 @@ public class RepoScm extends SCM {
 		}
 		final RevisionState lastState =
 				lastBuild.getAction(RevisionState.class);
-		if (lastState != null && lastState.getBranch() == manifestBranch) {
+		if (lastState != null
+				&& StringUtils.equals(lastState.getBranch(), manifestBranch)) {
 			return lastState;
 		}
 		return getLastState(lastBuild.getPreviousBuild());
