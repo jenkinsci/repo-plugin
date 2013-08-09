@@ -23,6 +23,7 @@
  */
 package hudson.plugins.repo;
 
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -34,10 +35,10 @@ import hudson.model.AbstractProject;
 import hudson.model.Run;
 import hudson.scm.ChangeLogParser;
 import hudson.scm.PollingResult;
-import hudson.scm.SCM;
+import hudson.scm.PollingResult.Change;
 import hudson.scm.SCMDescriptor;
 import hudson.scm.SCMRevisionState;
-import hudson.scm.PollingResult.Change;
+import hudson.scm.SCM;
 import hudson.util.FormValidation;
 
 import java.io.ByteArrayOutputStream;
@@ -47,11 +48,14 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import net.sf.json.JSONObject;
 
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -78,6 +82,7 @@ public class RepoScm extends SCM {
 	private final String destinationDir;
 	private final boolean currentBranch;
 	private final boolean quiet;
+	private final boolean exportRevisions;
 
 	/**
 	 * Returns the manifest repository URL.
@@ -164,6 +169,15 @@ public class RepoScm extends SCM {
 	}
 
 	/**
+	 * Returns the value of the revision export flag.
+	 * @return if <code>true</code> then the project revisions will be
+	 * 	published as environment variables.
+	 */
+	public boolean isExportRevisions() {
+		return exportRevisions;
+	}
+
+	/**
 	 * The constructor takes in user parameters and sets them. Each job using
 	 * the RepoSCM will call this constructor.
 	 *
@@ -203,6 +217,12 @@ public class RepoScm extends SCM {
 	 * @param quiet
 	 * 			  if this value is true,
 	 *            add "-q" options when excute "repo sync".
+	 * @param exportRevisions
+	 * 			  if <code>true</code> then the build will set environment
+	 * 		      variables for each project in the repo. The project name
+	 *            will be used as the key and the value will be set to the
+	 *            revision number of the project. The project name will be
+	 *            converted to a valid environment variable.
 	 */
 	@DataBoundConstructor
 	public RepoScm(final String manifestRepositoryUrl,
@@ -210,7 +230,8 @@ public class RepoScm extends SCM {
 			final String manifestGroup, final String mirrorDir, final int jobs,
 			final String localManifest, final String destinationDir,
             final String repoUrl,
-			final boolean currentBranch, final boolean quiet) {
+			final boolean currentBranch, final boolean quiet,
+			final boolean exportRevisions) {
 		this.manifestRepositoryUrl = manifestRepositoryUrl;
 		this.manifestBranch = Util.fixEmptyAndTrim(manifestBranch);
 		this.manifestGroup = Util.fixEmptyAndTrim(manifestGroup);
@@ -222,6 +243,7 @@ public class RepoScm extends SCM {
 		this.currentBranch = currentBranch;
 		this.quiet = quiet;
 		this.repoUrl = Util.fixEmptyAndTrim(repoUrl);
+		this.exportRevisions = exportRevisions;
 	}
 
 	@Override
@@ -243,9 +265,20 @@ public class RepoScm extends SCM {
 			final SCMRevisionState baseline) throws IOException,
 			InterruptedException {
 		SCMRevisionState myBaseline = baseline;
-		if (myBaseline == null) {
+		final AbstractBuild<?, ?> lastBuild = project.getLastBuild();
+        final EnvVars environment;
+        if (lastBuild != null) {
+        	environment = lastBuild.getEnvironment(listener);
+        } else {
+        	environment = RepoUtils.getPollEnvironment(project,
+        			workspace, launcher, listener, true);
+        }
+        final String expandedManifestBranch =
+        	environment.expand(manifestBranch);
+
+        if (myBaseline == null) {
 			// Probably the first build, or possibly an aborted build.
-			myBaseline = getLastState(project.getLastBuild());
+			myBaseline = getLastState(lastBuild, expandedManifestBranch);
 			if (myBaseline == null) {
 				return PollingResult.BUILD_NOW;
 			}
@@ -261,7 +294,8 @@ public class RepoScm extends SCM {
 			repoDir = workspace;
 		}
 
-		if (!checkoutCode(launcher, repoDir, listener.getLogger())) {
+		if (!checkoutCode(launcher, repoDir, expandedManifestBranch,
+			listener.getLogger())) {
 			// Some error occurred, try a build now so it gets logged.
 			return new PollingResult(myBaseline, myBaseline,
 					Change.INCOMPARABLE);
@@ -269,7 +303,7 @@ public class RepoScm extends SCM {
 
 		final RevisionState currentState =
 				new RevisionState(getStaticManifest(launcher, repoDir,
-						listener.getLogger()), manifestBranch,
+						listener.getLogger()), expandedManifestBranch,
 						listener.getLogger());
 		final Change change;
 		if (currentState.equals(myBaseline)) {
@@ -287,6 +321,10 @@ public class RepoScm extends SCM {
 			final BuildListener listener, final File changelogFile)
 			throws IOException, InterruptedException {
 
+        final EnvVars environment = build.getEnvironment(listener);
+        final String expandedManifestBranch =
+        		environment.expand(manifestBranch);
+
 		FilePath repoDir;
 		if (destinationDir != null) {
 			repoDir = workspace.child(destinationDir);
@@ -297,22 +335,63 @@ public class RepoScm extends SCM {
 			repoDir = workspace;
 		}
 
-		if (!checkoutCode(launcher, repoDir, listener.getLogger())) {
+		if (!checkoutCode(launcher, repoDir, expandedManifestBranch,
+				listener.getLogger())) {
 			return false;
 		}
 		final String manifest =
 				getStaticManifest(launcher, repoDir, listener.getLogger());
 		final RevisionState currentState =
-				new RevisionState(manifest, manifestBranch,
+				new RevisionState(manifest, expandedManifestBranch,
 						listener.getLogger());
 		build.addAction(currentState);
+
+		injectProjectRevisions(environment, currentState);
+		final AbstractBuild previousBuild = build.getPreviousBuild();
 		final RevisionState previousState =
-				getLastState(build.getPreviousBuild());
+				getLastState(previousBuild, expandedManifestBranch);
 
 		ChangeLog.saveChangeLog(currentState, previousState, changelogFile,
 				launcher, repoDir);
 		build.addAction(new TagAction(build));
 		return true;
+	}
+
+	@Override
+	public void buildEnvVars(final AbstractBuild<?, ?> build,
+			final Map<String, String> env) {
+		super.buildEnvVars(build, env);
+		if (exportRevisions) {
+			final RevisionState revState = build.getAction(RevisionState.class);
+			if (revState == null) {
+				// we have not built yet
+				return;
+			}
+			injectProjectRevisions(env, revState);
+		}
+	}
+
+	/**
+	 * Injects the project revisions into the environment.
+	 * @param env	the environment to populated.
+	 * @param revState	the revision state
+	 */
+	private void injectProjectRevisions(final Map<String, String> env,
+			final RevisionState revState) {
+		final Map<String, ProjectState> projectStateMap =
+				revState.getProjects();
+		for (Entry<String, ProjectState> mapEntry
+				: projectStateMap.entrySet()) {
+			final String projectName = mapEntry.getKey();
+			final ProjectState state = mapEntry.getValue();
+			final String projNameVar = "PROJ_REV_"
+					+ EnvVarUtils.convertToEnvVariableName(projectName);
+			final String revision = state.getRevision();
+			debug.log(Level.FINE,
+					"injecting revision environment variable: ${0}=${1}",
+					new Object[] {projNameVar, revision});
+			env.put(projNameVar, revision);
+		}
 	}
 
 	private int doSync(final Launcher launcher, final FilePath workspace,
@@ -336,11 +415,14 @@ public class RepoScm extends SCM {
 		int returnCode =
 				launcher.launch().stdout(logger).pwd(workspace)
 						.cmds(commands).join();
+
+		// now try and figure out the individual
 		return returnCode;
 	}
 
 	private boolean checkoutCode(final Launcher launcher,
-			final FilePath workspace, final OutputStream logger)
+			final FilePath workspace, final String expandedManifestBranch,
+			final OutputStream logger)
 			throws IOException, InterruptedException {
 		final List<String> commands = new ArrayList<String>(4);
 
@@ -350,9 +432,9 @@ public class RepoScm extends SCM {
 		commands.add("init");
 		commands.add("-u");
 		commands.add(manifestRepositoryUrl);
-		if (manifestBranch != null) {
+		if (expandedManifestBranch != null) {
 			commands.add("-b");
-			commands.add(manifestBranch);
+			commands.add(expandedManifestBranch);
 		}
 		if (manifestFile != null) {
 			commands.add("-m");
@@ -425,16 +507,18 @@ public class RepoScm extends SCM {
 		return manifestText;
 	}
 
-	private RevisionState getLastState(final Run<?, ?> lastBuild) {
+	private RevisionState getLastState(final Run<?, ?> lastBuild,
+			final String expandedManifestBranch) {
 		if (lastBuild == null) {
 			return null;
 		}
 		final RevisionState lastState =
 				lastBuild.getAction(RevisionState.class);
-		if (lastState != null && lastState.getBranch() == manifestBranch) {
+		if (lastState != null
+				&& StringUtils.equals(lastState.getBranch(), expandedManifestBranch)) {
 			return lastState;
 		}
-		return getLastState(lastBuild.getPreviousBuild());
+		return getLastState(lastBuild.getPreviousBuild(), expandedManifestBranch);
 	}
 
 	@Override
