@@ -265,10 +265,20 @@ public class RepoScm extends SCM {
 			final SCMRevisionState baseline) throws IOException,
 			InterruptedException {
 		SCMRevisionState myBaseline = baseline;
-		AbstractBuild<?, ?> lastBuild = project.getLastBuild();
-		if (myBaseline == null) {
+		final AbstractBuild<?, ?> lastBuild = project.getLastBuild();
+        final EnvVars environment;
+        if (lastBuild != null) {
+        	environment = lastBuild.getEnvironment(listener);
+        } else {
+        	environment = RepoUtils.getPollEnvironment(project,
+        			workspace, launcher, listener, true);
+        }
+        final String expandedManifestBranch =
+        	environment.expand(manifestBranch);
+
+        if (myBaseline == null) {
 			// Probably the first build, or possibly an aborted build.
-			myBaseline = getLastState(lastBuild);
+			myBaseline = getLastState(lastBuild, expandedManifestBranch);
 			if (myBaseline == null) {
 				return PollingResult.BUILD_NOW;
 			}
@@ -283,15 +293,6 @@ public class RepoScm extends SCM {
 		} else {
 			repoDir = workspace;
 		}
-        final EnvVars environment;
-        if (lastBuild != null) {
-        	environment = lastBuild.getEnvironment(listener);
-        } else {
-        	environment = RepoUtils.getPollEnvironment(project,
-        			workspace, launcher, listener, true);
-        }
-        final String expandedManifestBranch =
-        	environment.expand(manifestBranch);
 
 		if (!checkoutCode(launcher, repoDir, expandedManifestBranch,
 			listener.getLogger())) {
@@ -346,8 +347,9 @@ public class RepoScm extends SCM {
 		build.addAction(currentState);
 
 		injectProjectRevisions(environment, currentState);
+		final AbstractBuild previousBuild = build.getPreviousBuild();
 		final RevisionState previousState =
-				getLastState(build.getPreviousBuild());
+				getLastState(previousBuild, expandedManifestBranch);
 
 		ChangeLog.saveChangeLog(currentState, previousState, changelogFile,
 				launcher, repoDir);
@@ -505,17 +507,18 @@ public class RepoScm extends SCM {
 		return manifestText;
 	}
 
-	private RevisionState getLastState(final Run<?, ?> lastBuild) {
+	private RevisionState getLastState(final Run<?, ?> lastBuild,
+			final String expandedManifestBranch) {
 		if (lastBuild == null) {
 			return null;
 		}
 		final RevisionState lastState =
 				lastBuild.getAction(RevisionState.class);
 		if (lastState != null
-				&& StringUtils.equals(lastState.getBranch(), manifestBranch)) {
+				&& StringUtils.equals(lastState.getBranch(), expandedManifestBranch)) {
 			return lastState;
 		}
-		return getLastState(lastBuild.getPreviousBuild());
+		return getLastState(lastBuild.getPreviousBuild(), expandedManifestBranch);
 	}
 
 	@Override
