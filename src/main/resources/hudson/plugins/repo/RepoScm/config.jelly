@@ -6,6 +6,7 @@
 	xmlns:t="/lib/hudson"
 	xmlns:f="/lib/form">
 
+
 	<f:entry title="Manifest Repository Url" help="/plugin/repo/help-manifestRepositoryUrl.html">
 		<f:textbox name="repo.manifestRepositoryUrl" value="${scm.manifestRepositoryUrl}"/>
 	</f:entry>
@@ -37,7 +38,7 @@
 		</f:entry>
 
 		<f:entry title="Jobs" help="/plugin/repo/help-jobs.html">
-			<f:textbox name="repo.jobs" value="${scm.jobs}" clazz="number"/>
+			<f:textbox name="repo.jobs" value="${scm.jobs}" />
 		</f:entry>
 
 		<f:entry title="Current Branch" help="/plugin/repo/help-currentBranch.html">
