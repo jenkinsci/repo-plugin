@@ -227,12 +227,21 @@ public class RepoScm extends SCM implements Serializable {
 	 * Returns the value of resetFirst.
 	 */
 	@Exported
-	public boolean resetFirst() { return resetFirst; }
+	public boolean isResetFirst() { return resetFirst; }
 	/**
 	 * Returns the value of showAllChanges.
 	 */
 	@Exported
-	public boolean showAllChanges() { return showAllChanges; }
+	public boolean isShowAllChanges() {
+		return showAllChanges;
+	}
+	/**
+	 * Returns the value of trace.
+	 */
+	@Exported
+	public boolean isTrace() {
+		return trace;
+	}
 	/**
 	 * Returns the value of quiet.
 	 */
@@ -421,7 +430,7 @@ public class RepoScm extends SCM implements Serializable {
 				getLastState(previousBuild, expandedBranch);
 
 		ChangeLog.saveChangeLog(currentState, previousState, changelogFile,
-				launcher, repoDir, showAllChanges);
+				launcher, repoDir, isShowAllChanges());
 		build.addAction(new TagAction(build));
 		return true;
 	}
@@ -432,7 +441,7 @@ public class RepoScm extends SCM implements Serializable {
 		final List<String> commands = new ArrayList<String>(4);
 		debug.log(Level.FINE, "Syncing out code in: " + workspace.getName());
 		commands.clear();
-		if (resetFirst) {
+		if (isResetFirst()) {
 			commands.add(getDescriptor().getExecutable());
 			commands.add("forall");
 			commands.add("-c");
@@ -446,7 +455,7 @@ public class RepoScm extends SCM implements Serializable {
 			commands.clear();
 		}
 		commands.add(getDescriptor().getExecutable());
-		if (trace) {
+		if (isTrace()) {
 		    commands.add("--trace");
 		}
 		commands.add("sync");
@@ -476,7 +485,7 @@ public class RepoScm extends SCM implements Serializable {
 		debug.log(Level.INFO, "Checking out code in: " + workspace.getName());
 
 		commands.add(getDescriptor().getExecutable());
-		if (trace) {
+		if (isTrace()) {
 		    commands.add("--trace");
 		}
 		commands.add("init");

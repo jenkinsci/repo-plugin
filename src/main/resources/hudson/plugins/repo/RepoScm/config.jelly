@@ -61,7 +61,7 @@
 		</f:entry>
 
 		<f:entry title="Show all changes" help="/plugin/repo/help-showAllChanges.html">
-			<f:checkbox name="repo.showAllChanges" checked="${h.defaultToFalse(scm.showAllChanges)}" />
+			<f:checkbox name="repo.showAllChanges" checked="${scm.showAllChanges}" />
 		</f:entry>
 
 		<f:entry title="Local Manifest" help="/plugin/repo/help-localManifest.html">
