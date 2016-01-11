@@ -95,6 +95,7 @@ public class RepoScm extends SCM implements Serializable {
 	private final boolean trace;
 	private final boolean showAllChanges;
 	private boolean noTags;
+	private final String globalGitConfig;
 
 	/**
 	 * Returns the manifest repository URL.
@@ -260,6 +261,13 @@ public class RepoScm extends SCM implements Serializable {
 	 */
 	@Exported
 	public boolean isNoTags() { return noTags; }
+	/**
+	 * Returns the value of globalGitConfig.
+	 */
+	@Exported
+	public String getGlobalGitConfig() {
+		return globalGitConfig;
+	}
 
 	/**
 	 * The constructor takes in user parameters and sets them. Each job using
@@ -313,6 +321,9 @@ public class RepoScm extends SCM implements Serializable {
 	 * @param showAllChanges
 	 *            If this value is true, add the "--first-parent" option to
 	 *            "git log" when determining changesets.
+	 * @param globalGitConfig
+	 *            A string contains lines, and each line is consist of
+	 *            a git global config name value set.
 	 */
 	@DataBoundConstructor
 	public RepoScm(final String manifestRepositoryUrl,
@@ -325,7 +336,8 @@ public class RepoScm extends SCM implements Serializable {
 			final boolean resetFirst,
 			final boolean quiet,
 			final boolean trace,
-			final boolean showAllChanges) {
+			final boolean showAllChanges,
+			final String globalGitConfig) {
 		this.manifestRepositoryUrl = manifestRepositoryUrl;
 		this.manifestBranch = Util.fixEmptyAndTrim(manifestBranch);
 		this.manifestGroup = Util.fixEmptyAndTrim(manifestGroup);
@@ -341,6 +353,7 @@ public class RepoScm extends SCM implements Serializable {
 		this.trace = trace;
 		this.showAllChanges = showAllChanges;
 		this.repoUrl = Util.fixEmptyAndTrim(repoUrl);
+		this.globalGitConfig = Util.fixEmptyAndTrim(globalGitConfig);
 	}
 
   /**
@@ -521,6 +534,8 @@ public class RepoScm extends SCM implements Serializable {
 			final EnvVars env,
 			final OutputStream logger)
 			throws IOException, InterruptedException {
+		globalGitConfig(launcher, workspace, env, logger);
+
 		final List<String> commands = new ArrayList<String>(4);
 
 		debug.log(Level.INFO, "Checking out code in: " + workspace.getName());
@@ -640,6 +655,30 @@ public class RepoScm extends SCM implements Serializable {
 		}
 		return getLastState(lastBuild.getPreviousBuild(),
 				expandedManifestBranch);
+	}
+
+	private void globalGitConfig(final Launcher launcher,
+			final FilePath workspace,
+			final EnvVars env,
+			final OutputStream logger)
+			throws IOException, InterruptedException {
+		if (globalGitConfig != null) {
+			String[] configs = globalGitConfig.split("\\r?\\n");
+			for (String config : configs) {
+				String[] options = config.split("\\s+");
+				if (options.length == 2) {
+					final List<String> commands = new ArrayList<String>(4);
+					commands.add("git");
+					commands.add("config");
+					commands.add("--global");
+					commands.add(options[0]);
+					commands.add(options[1]);
+					launcher.launch().stdout(logger).pwd(workspace)
+							.cmds(commands).envs(env).join();
+					commands.clear();
+				}
+			}
+		}
 	}
 
 	@Override

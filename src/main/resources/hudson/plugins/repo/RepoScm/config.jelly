@@ -76,5 +76,9 @@
 			<f:textarea name="repo.localManifest" value="${scm.localManifest}" rows="10" />
 		</f:entry>
 
+		<f:entry title="Global Git Config" help="/plugin/repo/help-globalGitConfig.html">
+			<f:textarea name="repo.globalGitConfig" value="${scm.globalGitConfig}" rows="10" />
+		</f:entry>
+
 	</f:advanced>
 </j:jelly>
