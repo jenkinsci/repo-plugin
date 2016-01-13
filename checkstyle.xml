@@ -43,7 +43,7 @@ Checkstyle configuration that checks coding conventions.
     <module name="UnusedImports"/>
     <module name="MethodLength"/>
     <module name="ParameterNumber">
-      <property name="max" value="16"/>
+      <property name="max" value="18"/>
     </module>
     <module name="LineLength">
       <property name="tabWidth" value="4"/>

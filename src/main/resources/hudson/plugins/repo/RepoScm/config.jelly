@@ -76,5 +76,9 @@
 			<f:textarea name="repo.localManifest" value="${scm.localManifest}" rows="10" />
 		</f:entry>
 
+        <f:entry title="Custom Git Configuration" help="/plugin/repo/help-customGitConfig.html">
+            <f:textarea name="repo.customGitConfig" value="${scm.customGitConfig}" rows="10" />
+        </f:entry>
+
 	</f:advanced>
 </j:jelly>
