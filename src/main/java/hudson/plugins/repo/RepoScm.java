@@ -98,6 +98,7 @@ public class RepoScm extends SCM implements Serializable {
 	@CheckForNull private boolean resetFirst;
 	@CheckForNull private boolean quiet;
 	@CheckForNull private boolean forceSync;
+	@CheckForNull private boolean skipParent;
 	@CheckForNull private boolean trace;
 	@CheckForNull private boolean showAllChanges;
 	@CheckForNull private boolean noTags;
@@ -266,6 +267,13 @@ public class RepoScm extends SCM implements Serializable {
 		return forceSync;
 	}
 	/**
+	 * Returns the value of skipParent.
+	 */
+	@Exported
+	public boolean isSkipParent() {
+		return skipParent;
+	}
+	/**
 	 * Returns the value of trace.
 	 */
 	@Exported
@@ -307,6 +315,8 @@ public class RepoScm extends SCM implements Serializable {
 	 *                              "repo sync".
 	 * @param resetFirst            If this value is true, do "repo forall -c 'git reset --hard'"
 	 *                              before syncing.
+	 * @param skipParent            If this value is true, do repo sync won't be executed on
+	 *                              matrix parent.
 	 * @param quiet                 If this value is true, add the "-q" option when executing
 	 *                              "repo sync".
 	 * @param trace                 If this value is true, add the "--trace" option when
@@ -324,6 +334,7 @@ public class RepoScm extends SCM implements Serializable {
 				   final String repoUrl,
 				   final boolean currentBranch,
 				   final boolean resetFirst,
+				   final boolean skipParent,
 				   final boolean quiet,
 				   final boolean trace,
 				   final boolean showAllChanges) {
@@ -338,6 +349,7 @@ public class RepoScm extends SCM implements Serializable {
 		setDestinationDir(destinationDir);
 		setCurrentBranch(currentBranch);
 		setResetFirst(resetFirst);
+		setSkipParent(skipParent);
 		setQuiet(quiet);
 		setTrace(trace);
 		setShowAllChanges(showAllChanges);
@@ -365,6 +377,7 @@ public class RepoScm extends SCM implements Serializable {
 		destinationDir = null;
 		currentBranch = false;
 		resetFirst = false;
+		skipParent = false;
 		quiet = false;
 		forceSync = false;
 		trace = false;
@@ -558,6 +571,16 @@ public class RepoScm extends SCM implements Serializable {
 	}
 
 	/**
+	 * Set flag indicating whether repo sync should be skipped on parent.
+	 * @param skipParent
+	 *        If this value is true, do not run repo sync on parent.
+	 */
+	@DataBoundSetter
+	public void setSkipParent(final boolean skipParent) {
+		this.skipParent = skipParent;
+	}
+
+	/**
 	 * Set noTags.
 	 *
 	 * @param noTags
@@ -679,6 +702,12 @@ public class RepoScm extends SCM implements Serializable {
 			@CheckForNull final File changelogFile, @CheckForNull final SCMRevisionState baseline)
 			throws IOException, InterruptedException {
 
+		// Do not do anything on parent if skipParent is true
+		if (isSkipParent()
+				&& build.getExecutor().getNumber() == -1) {
+			return;
+		}
+
 		FilePath repoDir;
 		if (destinationDir != null) {
 			repoDir = workspace.child(destinationDir);
@@ -770,7 +799,6 @@ public class RepoScm extends SCM implements Serializable {
 			final OutputStream logger)
 			throws IOException, InterruptedException {
 		final List<String> commands = new ArrayList<String>(4);
-
 		debug.log(Level.INFO, "Checking out code in: " + workspace.getName());
 
 		commands.add(getDescriptor().getExecutable());

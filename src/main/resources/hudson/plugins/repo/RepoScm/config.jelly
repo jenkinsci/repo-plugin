@@ -64,6 +64,10 @@
 			<f:checkbox name="repo.forceSync" checked="${scm.forceSync}" />
 		</f:entry>
 
+		<f:entry title="Skip parent" help="/plugin/repo/help-skipParent.html">
+			<f:checkbox name="repo.skipParent" checked="${scm.skipParent}" />
+		</f:entry>
+
 		<f:entry title="No tags" help="/plugin/repo/help-noTags.html">
 			<f:checkbox name="repo.noTags" checked="${scm.noTags}" />
 		</f:entry>
