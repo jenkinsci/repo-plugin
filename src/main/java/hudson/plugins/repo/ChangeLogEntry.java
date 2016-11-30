@@ -36,7 +36,7 @@ import java.util.List;
  * A POJO containing information about a single change (git commit) in a git
  * repository. These objects are used to build the change log page.
  */
-class ChangeLogEntry extends ChangeLogSet.Entry {
+public class ChangeLogEntry extends ChangeLogSet.Entry {
 
 	/**
 	 * A POJO containing information about a modified file. A RepoChangeLogEntry
@@ -145,12 +145,12 @@ class ChangeLogEntry extends ChangeLogSet.Entry {
 	// CS IGNORE ParameterNumber FOR NEXT 16 LINES. REASON: I've got no
 	// better ideas. Passing in all the variables here makes sense to me, even
 	// if it is ugly.
-	ChangeLogEntry(final String path, final String serverPath,
-				   final String revision, final String authorName,
-				   final String authorEmail, final String authorDate,
-				   final String committerName, final String committerEmail,
-				   final String committerDate, final String commitText,
-				   final List<ModifiedFile> modifiedFiles) {
+	public ChangeLogEntry(final String path, final String serverPath,
+			final String revision, final String authorName,
+			final String authorEmail, final String authorDate,
+			final String committerName, final String committerEmail,
+			final String committerDate, final String commitText,
+			final List<ModifiedFile> modifiedFiles) {
 		this.path = path;
 		this.serverPath = serverPath;
 		this.revision = revision;
