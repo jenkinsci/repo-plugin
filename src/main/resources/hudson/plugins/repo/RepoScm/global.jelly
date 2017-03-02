@@ -12,4 +12,22 @@
 				checkUrl="'${rootURL}/scm/RepoScm/executableCheck?value='+escape(this.value)"/>
 		</f:entry>
 	</f:section>
+
+	<f:entry title="Gerrit slave setting">
+	    <f:repeatable name="slaves" var="slave" items="${descriptor.slaves.entrySet()}">
+	        <table width="100%">
+	            <f:entry title="master">
+	                <f:textbox name="slave.master" value="${slave.key}" />
+	            </f:entry>
+	            <f:entry title="slave">
+	                <f:textbox name="slave.slave" value="${slave.value}" />
+	            </f:entry>
+	            <f:entry title="">
+	                <div align="right">
+	                    <f:repeatableDeleteButton />
+	                </div>
+	            </f:entry>
+	        </table>
+	    </f:repeatable>
+	</f:entry>
 </j:jelly>

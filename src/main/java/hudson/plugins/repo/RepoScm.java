@@ -23,17 +23,22 @@
  */
 package hudson.plugins.repo;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -54,6 +59,7 @@ import hudson.scm.PollingResult;
 import hudson.scm.SCM;
 import hudson.scm.SCMDescriptor;
 import hudson.scm.SCMRevisionState;
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import org.apache.commons.lang.StringUtils;
@@ -102,6 +108,12 @@ public class RepoScm extends SCM implements Serializable {
 	@CheckForNull private boolean showAllChanges;
 	@CheckForNull private boolean noTags;
 	@CheckForNull private Set<String> ignoreProjects;
+	@CheckForNull private boolean netrcCredential;
+	@CheckForNull private String netrcCredentialMachine;
+	@CheckForNull private String netrcCredentialLogin;
+	@CheckForNull private String netrcCredentialPassword;
+	@CheckForNull private String customGitConfig;
+
 
 	/**
 	 * Returns the manifest repository URL.
@@ -276,6 +288,34 @@ public class RepoScm extends SCM implements Serializable {
 	 */
 	@Exported
 	public boolean isNoTags() { return noTags; }
+	/**
+	 * Returns the value of netrcCredential.
+	 */
+	@Exported
+	public boolean getNetrcCredential() { return netrcCredential; }
+	/**
+	 * Returns the value of netrcCredentialMachine.
+	 */
+	@Exported
+	public String getNetrcCredentialMachine() { return netrcCredentialMachine; }
+	/**
+	 * Returns the value of netrcCredentialLogin.
+	 */
+	@Exported
+	public String getNetrcCredentialLogin() { return netrcCredentialLogin; }
+	/**
+	 * Returns the value of netrcCredentialPassword.
+	 */
+	@Exported
+	public String getNetrcCredentialPassword() {
+		return netrcCredentialPassword;
+	}
+	/**
+	 * Returns the value of customGitConfig.
+	 */
+	@Exported
+	public String getcustomGitConfig() { return customGitConfig; }
+
 
 	/**
 	 * The constructor takes in user parameters and sets them. Each job using
@@ -315,6 +355,16 @@ public class RepoScm extends SCM implements Serializable {
 	 *                              executing "repo init" and "repo sync".
 	 * @param showAllChanges        If this value is true, add the "--first-parent" option to
 	 *                              "git log" when determining changesets.
+	 * @param netrcCredential       If this value is true, write netrc credential information
+	 *                              provided here to ~/.netrc.
+	 * @param netrcCredentialMachine
+	 *                              Netrc machine value.
+	 * @param netrcCredentialLogin
+	 *                              Netrc login value.
+	 * @param netrcCredentialPassword
+	 *                              Netrc password value.
+	 * @param customGitConfig       A string contains lines, and each line is consist of
+	 *                              a git config name value set.
 	 *
 	 */
 	@Deprecated
@@ -328,7 +378,12 @@ public class RepoScm extends SCM implements Serializable {
 				   final boolean resetFirst,
 				   final boolean quiet,
 				   final boolean trace,
-				   final boolean showAllChanges) {
+				   final boolean showAllChanges,
+				   final boolean netrcCredential,
+				   final String netrcCredentialMachine,
+				   final String netrcCredentialLogin,
+				   final String netrcCredentialPassword,
+				   final String customGitConfig) {
 		this(manifestRepositoryUrl);
 		setManifestBranch(manifestBranch);
 		setManifestGroup(manifestGroup);
@@ -345,6 +400,11 @@ public class RepoScm extends SCM implements Serializable {
 		setShowAllChanges(showAllChanges);
 		setRepoUrl(repoUrl);
 		ignoreProjects = Collections.<String>emptySet();
+		setNetrcCredential(netrcCredential);
+		setNetrcCredentialMachine(netrcCredentialMachine);
+		setNetrcCredentialLogin(netrcCredentialLogin);
+		setNetrcCredentialPassword(netrcCredentialPassword);
+		setCustomGitConfig(customGitConfig);
 	}
 
 	/**
@@ -373,6 +433,11 @@ public class RepoScm extends SCM implements Serializable {
 		showAllChanges = false;
 		noTags = false;
 		ignoreProjects = Collections.<String>emptySet();
+		netrcCredential = false;
+		netrcCredentialMachine = null;
+		netrcCredentialLogin = null;
+		netrcCredentialPassword = null;
+		customGitConfig = null;
 	}
 
 	/**
@@ -588,6 +653,64 @@ public class RepoScm extends SCM implements Serializable {
 				Arrays.asList(ignoreProjects.split("\\s+")));
 	}
 
+	/**
+	 * Set netrcCredential.
+	 *
+	 * @param netrcCredential
+	 *            If this value is true, write netrc credential information
+	 *            provided here to ~/.netrc.
+	 */
+	@DataBoundSetter
+	public final void setNetrcCredential(final boolean netrcCredential) {
+		this.netrcCredential = netrcCredential;
+	}
+	/**
+	 * Set netrcCredentialMachine.
+	 *
+	 * @param netrcCredentialMachine
+	 *            Netrc machine value.
+	 */
+	@DataBoundSetter
+	public final void setNetrcCredentialMachine(final String netrcCredentialMachine) {
+		this.netrcCredentialMachine = netrcCredentialMachine;
+	}
+	/**
+	 * Set netrcCredentialLogin.
+	 *
+	 * @param netrcCredentialLogin
+	 *            Netrc login value.
+	 */
+	@DataBoundSetter
+	public final void setNetrcCredentialLogin(final String netrcCredentialLogin) {
+		this.netrcCredentialLogin = netrcCredentialLogin;
+	}
+	/**
+	 * Set netrcCredentialPassword.
+	 *
+	 * @param netrcCredentialPassword
+	 *            Netrc password value.
+	 */
+	@DataBoundSetter
+	public final void setNetrcCredentialPassword(final String netrcCredentialPassword) {
+		this.netrcCredentialPassword = netrcCredentialPassword;
+	}
+	/**
+	 * Set customGitConfig.
+	 *
+	 * @param customGitConfig
+	 *            A string contains lines, and each line is consist of
+	 *            a git config name value set.
+	 */
+	@DataBoundSetter
+	public final void setCustomGitConfig(final String customGitConfig) {
+		this.customGitConfig = customGitConfig;
+	}
+
+	@Override
+	public boolean requiresWorkspaceForPolling() {
+		return false;
+	}
+
 	@Override
 	public SCMRevisionState calcRevisionsFromBuild(
 			@Nonnull final Run<?, ?> build, @Nullable final FilePath workspace,
@@ -601,7 +724,7 @@ public class RepoScm extends SCM implements Serializable {
 	}
 
 	private boolean shouldIgnoreChanges(final RevisionState current, final RevisionState baseline) {
-		List<ProjectState>  changedProjects = current.whatChanged(baseline);
+		List<ProjectState> changedProjects = current.whatChanged(baseline);
 		if ((changedProjects == null) || (ignoreProjects == null)) {
 			return false;
 		}
@@ -626,6 +749,10 @@ public class RepoScm extends SCM implements Serializable {
 			@Nullable final FilePath workspace, @Nonnull final TaskListener listener,
 			@Nonnull final SCMRevisionState baseline) throws IOException,
 			InterruptedException {
+		if ((manifestRepositoryUrl == null) || manifestRepositoryUrl.isEmpty()) {
+			return PollingResult.NO_CHANGES;
+		}
+
 		SCMRevisionState myBaseline = baseline;
 		final EnvVars env = getEnvVars(null, job);
 		final String expandedManifestBranch = env.expand(manifestBranch);
@@ -639,26 +766,9 @@ public class RepoScm extends SCM implements Serializable {
 			}
 		}
 
-		FilePath repoDir;
-		if (destinationDir != null) {
-			repoDir = workspace.child(destinationDir);
-		} else {
-			repoDir = workspace;
-		}
-
-		if (!repoDir.isDirectory()) {
-			repoDir.mkdirs();
-		}
-
-		if (!checkoutCode(launcher, repoDir, env, listener.getLogger())) {
-			// Some error occurred, try a build now so it gets logged.
-			return new PollingResult(myBaseline, myBaseline,
-					Change.INCOMPARABLE);
-		}
-
 		final RevisionState currentState = new RevisionState(
-				getStaticManifest(launcher, repoDir, listener.getLogger(), env),
-				getManifestRevision(launcher, repoDir, listener.getLogger(), env),
+				getStaticManifestBySshCommand(),
+				getManifestRevisionBySshCommand(),
 				expandedManifestBranch, listener.getLogger());
 
 		final Change change;
@@ -696,6 +806,14 @@ public class RepoScm extends SCM implements Serializable {
 		Job<?, ?> job = build.getParent();
 		EnvVars env = build.getEnvironment(listener);
 		env = getEnvVars(env, job);
+
+		netrcCredential(launcher, workspace, env, listener.getLogger());
+		customGitConfig(launcher, workspace, env, listener.getLogger());
+
+		if ((manifestRepositoryUrl == null) || manifestRepositoryUrl.isEmpty()) {
+			return;
+		}
+
 		if (!checkoutCode(launcher, repoDir, env, listener.getLogger())) {
 			throw new IOException("Could not checkout");
 		}
@@ -873,6 +991,33 @@ public class RepoScm extends SCM implements Serializable {
 		return manifestText;
 	}
 
+	private String getStaticManifestBySshCommand()
+			throws IOException, InterruptedException {
+		String tmp = manifestRepositoryUrl.split("//")[1];
+		String host = tmp.split("/")[0];
+		if (getDescriptor().getSlaves().get(host) != null) {
+			host = getDescriptor().getSlaves().get(host);
+		}
+		String project = tmp.substring(tmp.indexOf("/") + 1);
+		String branch = manifestBranch == null ? "master" : manifestBranch;
+		String group = manifestGroup == null ? "default" : manifestGroup;
+
+		ProcessBuilder pb = new ProcessBuilder(
+				"ssh", "-p", "29418", "jenkins@" + host, "manifest",
+				"static", "-p", project, "-b", branch , "-g", group);
+		Process process = pb.start();
+		final String stdout = output(process.getInputStream());
+		final String stderr = output(process.getErrorStream());
+
+		int errCode = process.waitFor();
+		if (errCode != 0) {
+			throw new IOException(stderr);
+		}
+
+		debug.log(Level.FINEST, stdout);
+		return stdout;
+	}
+
 	private String getManifestRevision(final Launcher launcher,
 			final FilePath workspace, final OutputStream logger,
 			final EnvVars env)
@@ -890,6 +1035,32 @@ public class RepoScm extends SCM implements Serializable {
 		return manifestText;
 	}
 
+	private String getManifestRevisionBySshCommand()
+			throws IOException, InterruptedException {
+		String tmp = manifestRepositoryUrl.split("//")[1];
+		String host = tmp.split("/")[0];
+		if (getDescriptor().getSlaves().get(host) != null) {
+			host = getDescriptor().getSlaves().get(host);
+		}
+		String project = tmp.substring(tmp.indexOf("/") + 1);
+		String branch = manifestBranch == null ? "master" : manifestBranch;
+
+		ProcessBuilder pb = new ProcessBuilder(
+				"ssh", "-p", "29418", "jenkins@" + host, "manifest",
+				"reference", "-p", project, "-b", branch);
+		Process process = pb.start();
+		final String stdout = output(process.getInputStream());
+		final String stderr = output(process.getErrorStream());
+
+		int errCode = process.waitFor();
+		if (errCode != 0) {
+			throw new IOException(stderr);
+		}
+
+		debug.log(Level.FINEST, stdout);
+		return stdout;
+	}
+
 	@Nonnull
 	private SCMRevisionState getLastState(final Run<?, ?> lastBuild,
 			final String expandedManifestBranch) {
@@ -905,6 +1076,68 @@ public class RepoScm extends SCM implements Serializable {
 		}
 		return getLastState(lastBuild.getPreviousBuild(),
 				expandedManifestBranch);
+	}
+
+	private void netrcCredential(final Launcher launcher,
+			final FilePath workspace,
+			final EnvVars env,
+			final OutputStream logger)
+			throws IOException, InterruptedException {
+		if (netrcCredential) {
+			FilePath file = new FilePath(workspace, ".netrc");
+			final List<String> commands = new ArrayList<String>(4);
+			commands.add("git");
+			commands.add("config");
+			commands.add("--global");
+			commands.add("credential.helper");
+			commands.add("netrc -f " + file.getRemote());
+			launcher.launch().stdout(logger).pwd(workspace)
+					.cmds(commands).envs(env).join();
+			file.write("machine " + netrcCredentialMachine + "\n"
+					+ "login " + netrcCredentialLogin + "\n"
+					+ "password " + netrcCredentialPassword, null);
+			file.chmod(0600);
+		}
+	}
+
+	private void customGitConfig(final Launcher launcher,
+								 final FilePath workspace,
+								 final EnvVars env,
+								 final OutputStream logger)
+			throws IOException, InterruptedException {
+		if (customGitConfig != null) {
+			String[] configs = customGitConfig.split("\\r?\\n");
+			for (String config : configs) {
+				String[] options = config.split("\\s+");
+				if (options.length == 2) {
+					final List<String> commands = new ArrayList<String>(4);
+					commands.add("git");
+					commands.add("config");
+					commands.add("--global");
+					commands.add(options[0]);
+					commands.add(options[1]);
+					launcher.launch().stdout(logger).pwd(workspace)
+							.cmds(commands).envs(env).join();
+					commands.clear();
+				}
+			}
+		}
+	}
+
+	private String output(final InputStream inputStream)
+			throws IOException {
+		StringBuilder sb = new StringBuilder();
+		BufferedReader br = null;
+		try {
+			br = new BufferedReader(new InputStreamReader(inputStream));
+			String line;
+			while ((line = br.readLine()) != null) {
+				sb.append(line + System.getProperty("line.separator"));
+			}
+		} finally {
+			br.close();
+		}
+		return sb.toString().trim();
 	}
 
 	@Override
@@ -939,6 +1172,8 @@ public class RepoScm extends SCM implements Serializable {
 	public static class DescriptorImpl extends SCMDescriptor<RepoScm> {
 		private String repoExecutable;
 
+		private Map<String, String> slaves = new HashMap();
+
 		/**
 		 * Call the superclass constructor and load our configuration from the
 		 * file system.
@@ -946,6 +1181,13 @@ public class RepoScm extends SCM implements Serializable {
 		public DescriptorImpl() {
 			super(null);
 			load();
+		}
+
+		/**
+		 * Return slaves.
+         */
+		public Map<String, String> getSlaves() {
+			return slaves;
 		}
 
 		@Override
@@ -959,6 +1201,24 @@ public class RepoScm extends SCM implements Serializable {
 				throws hudson.model.Descriptor.FormException {
 			repoExecutable =
 					Util.fixEmptyAndTrim(json.getString("executable"));
+
+			slaves.clear();
+			Object obj = json.get("slaves");
+			if (obj != null) {
+				JSONArray array;
+				if (obj instanceof JSONObject) {
+					array = new JSONArray();
+					array.add(obj);
+				} else {
+					array = (JSONArray) obj;
+				}
+				for (int i = 0; i < array.size(); i++) {
+					JSONObject slave = array.getJSONObject(i);
+					slaves.put(slave.getString("master"),
+							slave.getString("slave"));
+				}
+			}
+
 			save();
 			return super.configure(req, json);
 		}
@@ -993,4 +1253,5 @@ public class RepoScm extends SCM implements Serializable {
 			return true;
 		}
 	}
+
 }

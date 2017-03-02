@@ -80,5 +80,25 @@
 			<f:textarea name="repo.localManifest" value="${scm.localManifest}" rows="10" />
 		</f:entry>
 
+		<f:entry title="Netrc Credential" field="netrcCredential" help="/plugin/repo/help-netrcCredential.html">
+			<table width="100%">
+			    <f:optionalBlock title="" inline="true" name="netrcCredential" checked="${it.netrcCredential}">
+			        <f:entry title="Machine">
+			            <f:textbox name="repo.netrcCredentialMachine" value="${scm.netrcCredentialMachine}" />
+			        </f:entry>
+			        <f:entry title="Login">
+			            <f:textbox name="repo.netrcCredentialLogin" value="${scm.netrcCredentialLogin}" />
+			        </f:entry>
+			        <f:entry title="Password">
+			            <f:password name="repo.netrcCredentialPassword" value="${scm.netrcCredentialPassword}" />
+			        </f:entry>
+			    </f:optionalBlock>
+			</table>
+		</f:entry>
+
+        <f:entry title="Custom Git Configuration" help="/plugin/repo/help-customGitConfig.html">
+            <f:textarea name="repo.customGitConfig" value="${scm.customGitConfig}" rows="10" />
+        </f:entry>
+
 	</f:advanced>
 </j:jelly>
