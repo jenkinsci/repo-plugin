@@ -68,6 +68,10 @@
 			<f:checkbox name="repo.noTags" checked="${scm.noTags}" />
 		</f:entry>
 
+		<f:entry title="Always clean" help="/plugin/repo/help-alwaysClean.html">
+			<f:checkbox name="repo.alwaysClean" checked="${scm.alwaysClean}" />
+		</f:entry>
+
 		<f:entry title="Trace" help="/plugin/repo/help-trace.html">
 			<f:checkbox name="repo.trace" checked="${scm.trace}" />
 		</f:entry>

@@ -101,6 +101,7 @@ public class RepoScm extends SCM implements Serializable {
 	@CheckForNull private boolean trace;
 	@CheckForNull private boolean showAllChanges;
 	@CheckForNull private boolean noTags;
+	@CheckForNull private boolean alwaysClean;
 	@CheckForNull private Set<String> ignoreProjects;
 
 	/**
@@ -242,6 +243,14 @@ public class RepoScm extends SCM implements Serializable {
 	public boolean isCurrentBranch() {
 		return currentBranch;
 	}
+
+	/**
+	 * Returns the repo alwaysClean.
+	 */
+	@Exported
+	public boolean isAlwaysClean() {
+		return alwaysClean;
+	}
 	/**
 	 * Returns the value of resetFirst.the initial manifest file name.
 	 */
@@ -372,6 +381,7 @@ public class RepoScm extends SCM implements Serializable {
 		trace = false;
 		showAllChanges = false;
 		noTags = false;
+		alwaysClean = false;
 		ignoreProjects = Collections.<String>emptySet();
 	}
 
@@ -503,12 +513,24 @@ public class RepoScm extends SCM implements Serializable {
 	 * Set quiet.
 	 *
 	 * @param quiet
-	 * *      If this value is true, add the "-q" option when executing
-	 *        "repo sync".
+	 *       If this value is true, add the "-q" option when executing
+	 *       "repo sync".
      */
 	@DataBoundSetter
 	public void setQuiet(final boolean quiet) {
 		this.quiet = quiet;
+	}
+
+	/**
+	 * Set always clean.
+	 *
+	 * @param alwaysClean
+	 *            If this value is true, The WC is wiped before checking out new
+	 *            source
+	 */
+	@DataBoundSetter
+	public void setAlwaysClean(@CheckForNull final boolean alwaysClean) {
+		this.alwaysClean = alwaysClean;
 	}
 
 	/**
@@ -681,6 +703,12 @@ public class RepoScm extends SCM implements Serializable {
 			@Nonnull final FilePath workspace, @Nonnull final TaskListener listener,
 			@CheckForNull final File changelogFile, @CheckForNull final SCMRevisionState baseline)
 			throws IOException, InterruptedException {
+		if (alwaysClean) {
+			listener.getLogger().println("Cleaning " + workspace.getRemote());
+			if (workspace.exists()) {
+				workspace.deleteContents();
+			}
+		}
 
 		Job<?, ?> job = build.getParent();
 		EnvVars env = build.getEnvironment(listener);
