@@ -96,6 +96,7 @@ public class RepoScm extends SCM implements Serializable {
 	@CheckForNull private String destinationDir;
 	@CheckForNull private boolean currentBranch;
 	@CheckForNull private boolean resetFirst;
+	@CheckForNull private boolean cleanFirst;
 	@CheckForNull private boolean quiet;
 	@CheckForNull private boolean forceSync;
 	@CheckForNull private boolean trace;
@@ -243,10 +244,15 @@ public class RepoScm extends SCM implements Serializable {
 		return currentBranch;
 	}
 	/**
-	 * Returns the value of resetFirst.the initial manifest file name.
+	 * Returns the value of resetFirst.
 	 */
 	@Exported
 	public boolean isResetFirst() { return resetFirst; }
+	/**
+	 * Returns the value of cleanFirst.
+	 */
+	@Exported
+	public boolean isCleanFirst() { return cleanFirst; }
 	/**
 	 * Returns the value of showAllChanges.
 	 */
@@ -309,6 +315,8 @@ public class RepoScm extends SCM implements Serializable {
 	 *                              "repo sync".
 	 * @param resetFirst            If this value is true, do "repo forall -c 'git reset --hard'"
 	 *                              before syncing.
+	 * @param cleanFirst            If this value is true, do "repo forall -c 'git clean -fdx'"
+	 *                              before syncing.
 	 * @param quiet                 If this value is true, add the "-q" option when executing
 	 *                              "repo sync".
 	 * @param trace                 If this value is true, add the "--trace" option when
@@ -326,6 +334,7 @@ public class RepoScm extends SCM implements Serializable {
 				   final String repoUrl,
 				   final boolean currentBranch,
 				   final boolean resetFirst,
+				   final boolean cleanFirst,
 				   final boolean quiet,
 				   final boolean trace,
 				   final boolean showAllChanges) {
@@ -340,6 +349,7 @@ public class RepoScm extends SCM implements Serializable {
 		setDestinationDir(destinationDir);
 		setCurrentBranch(currentBranch);
 		setResetFirst(resetFirst);
+		setCleanFirst(cleanFirst);
 		setQuiet(quiet);
 		setTrace(trace);
 		setShowAllChanges(showAllChanges);
@@ -367,6 +377,7 @@ public class RepoScm extends SCM implements Serializable {
 		destinationDir = null;
 		currentBranch = false;
 		resetFirst = false;
+		cleanFirst = false;
 		quiet = false;
 		forceSync = false;
 		trace = false;
@@ -497,6 +508,18 @@ public class RepoScm extends SCM implements Serializable {
 	@DataBoundSetter
 	public void setResetFirst(final boolean resetFirst) {
 		this.resetFirst = resetFirst;
+	}
+
+	/**
+	 * Set cleanFirst.
+	 *
+	 * @param cleanFirst
+	 *        If this value is true, do "repo forall -c 'git clean -fdx'"
+	 *        before syncing.
+     */
+	@DataBoundSetter
+	public void setCleanFirst(final boolean cleanFirst) {
+		this.cleanFirst = cleanFirst;
 	}
 
 	/**
@@ -737,11 +760,24 @@ public class RepoScm extends SCM implements Serializable {
 			commands.add("forall");
 			commands.add("-c");
 			commands.add("git reset --hard");
-			int syncCode = launcher.launch().stdout(logger)
+			int resetCode = launcher.launch().stdout(logger)
 				.stderr(logger).pwd(workspace).cmds(commands).envs(env).join();
 
-			if (syncCode != 0) {
+			if (resetCode != 0) {
 				debug.log(Level.WARNING, "Failed to reset first.");
+			}
+			commands.clear();
+		}
+		if (cleanFirst) {
+			commands.add(getDescriptor().getExecutable());
+			commands.add("forall");
+			commands.add("-c");
+			commands.add("git clean -fdx");
+			int cleanCode = launcher.launch().stdout(logger)
+				.stderr(logger).pwd(workspace).cmds(commands).envs(env).join();
+
+			if (cleanCode != 0) {
+				debug.log(Level.WARNING, "Failed to clean first.");
 			}
 			commands.clear();
 		}
