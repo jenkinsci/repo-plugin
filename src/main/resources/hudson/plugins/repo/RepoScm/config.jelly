@@ -55,6 +55,9 @@
 		<f:entry title="Reset first" help="/plugin/repo/help-resetFirst.html">
 			<f:checkbox name="repo.resetFirst" checked="${scm.resetFirst}" />
 		</f:entry>
+                <f:entry title="Clean first" help="/plugin/repo/help-cleanFirst.html">
+                        <f:checkbox name="repo.cleanFirst" checked="${scm.cleanFirst}" />
+                </f:entry>
 
 		<f:entry title="Quiet" help="/plugin/repo/help-quiet.html">
 			<f:checkbox name="repo.quiet" checked="${h.defaultToTrue(scm.quiet)}" />
