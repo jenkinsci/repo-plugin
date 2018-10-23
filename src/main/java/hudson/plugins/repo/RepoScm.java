@@ -104,6 +104,7 @@ public class RepoScm extends SCM implements Serializable {
 	@CheckForNull private boolean showAllChanges;
 	@CheckForNull private boolean noTags;
 	@CheckForNull private Set<String> ignoreProjects;
+	@CheckForNull private boolean noCloneBundle;
 
 	/**
 	 * Returns the manifest repository URL.
@@ -297,6 +298,13 @@ public class RepoScm extends SCM implements Serializable {
 	public boolean isNoTags() {
 		return noTags;
 	}
+	/**
+	 * Returns the value of noCloneBundle.
+	 */
+	@Exported
+	public boolean isNoCloneBundle() { 
+		return noCloneBundle; 
+	}
 
 	/**
 	 * The constructor takes in user parameters and sets them. Each job using
@@ -336,6 +344,8 @@ public class RepoScm extends SCM implements Serializable {
 	 *                              executing "repo init" and "repo sync".
 	 * @param showAllChanges        If this value is true, add the "--first-parent" option to
 	 *                              "git log" when determining changesets.
+	 * @param noCloneBundle         If this value is true, add the "--no-clone-bundle" option when
+	 *                              executing "repo sync".
 	 *
 	 */
 	@Deprecated
@@ -349,7 +359,8 @@ public class RepoScm extends SCM implements Serializable {
 				   final boolean resetFirst,
 				   final boolean quiet,
 				   final boolean trace,
-				   final boolean showAllChanges) {
+				   final boolean showAllChanges,
+				   final boolean noCloneBundle) {
 		this(manifestRepositoryUrl);
 		setManifestBranch(manifestBranch);
 		setManifestGroup(manifestGroup);
@@ -367,6 +378,7 @@ public class RepoScm extends SCM implements Serializable {
 		setShowAllChanges(showAllChanges);
 		setRepoUrl(repoUrl);
 		ignoreProjects = Collections.<String>emptySet();
+		setNoCloneBundle(noCloneBundle);
 	}
 
 	/**
@@ -396,6 +408,7 @@ public class RepoScm extends SCM implements Serializable {
 		showAllChanges = false;
 		noTags = false;
 		ignoreProjects = Collections.<String>emptySet();
+		noCloneBundle = false;
 	}
 
 	/**
@@ -569,6 +582,18 @@ public class RepoScm extends SCM implements Serializable {
 	@DataBoundSetter
 	public void setShowAllChanges(final boolean showAllChanges) {
 		this.showAllChanges = showAllChanges;
+	}
+
+	/**
+	 * Set noCloneBundle.
+	 *
+	 * @param noCloneBundle
+	 *        If this value is true, add the "--no-clone-bundle" option when
+	 *        running the "repo init" and "repo sync" commands.
+     */
+	@DataBoundSetter
+	public void setNoCloneBundle(final boolean noCloneBundle) {
+		this.noCloneBundle = noCloneBundle;
 	}
 
 	/**
@@ -813,6 +838,9 @@ public class RepoScm extends SCM implements Serializable {
 		}
 		if (isNoTags()) {
 			commands.add("--no-tags");
+		}
+		if (isNoCloneBundle()) {
+			commands.add("--no-clone-bundle");
 		}
 
 		return launcher.launch().stdout(logger).pwd(workspace)

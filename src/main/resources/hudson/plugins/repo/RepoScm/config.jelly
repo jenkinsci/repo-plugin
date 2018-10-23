@@ -84,5 +84,9 @@
 			<f:textarea name="repo.localManifest" value="${scm.localManifest}" rows="10" />
 		</f:entry>
 
+		<f:entry title="No Clone Bundle" help="/plugin/repo/help-noCloneBundle.html">
+			<f:checkbox name="repo.noCloneBundle" checked="${scm.noCloneBundle}" />
+		</f:entry>
+
 	</f:advanced>
 </j:jelly>
