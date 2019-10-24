@@ -115,14 +115,15 @@ class ChangeLog extends ChangeLogParser {
 			InterruptedException {
 		final List<ProjectState> changes =
 				currentState.whatChanged(previousState);
+		final List<ChangeLogEntry> logs = new ArrayList<ChangeLogEntry>();
 
 		debug.log(Level.FINEST, "generateChangeLog: changes " + changes);
 		if (changes == null || changes.size() == 0) {
 			// No changes or the first job
-			return null;
+			debug.log(Level.FINEST, "No changes, or first job, returning empty log");
+			return logs;
 		}
 		final List<String> commands = new ArrayList<String>(5);
-		final List<ChangeLogEntry> logs = new ArrayList<ChangeLogEntry>();
 
 
 		for (final ProjectState change : changes) {
@@ -296,11 +297,6 @@ class ChangeLog extends ChangeLogParser {
 		List<ChangeLogEntry> logs =
 				generateChangeLog(currentState, previousState, launcher,
 						workspace, showAllChanges);
-
-		if (logs == null) {
-			debug.info("No logs found");
-			return;
-		}
 
 		final XStream2 xs = new XStream2();
 		final AtomicFileWriter w = new AtomicFileWriter(changelogFile);
