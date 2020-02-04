@@ -23,6 +23,43 @@
  */
 package hudson.plugins.repo;
 
+import hudson.EnvVars;
+import hudson.Extension;
+import hudson.FilePath;
+import hudson.Launcher;
+import hudson.Util;
+import hudson.model.Job;
+import hudson.model.ParameterDefinition;
+import hudson.model.ParametersDefinitionProperty;
+import hudson.model.Run;
+import hudson.model.StringParameterDefinition;
+import hudson.model.TaskListener;
+import hudson.plugins.repo.behaviors.RepoScmBehavior;
+import hudson.plugins.repo.behaviors.RepoScmBehaviorDescriptor;
+import hudson.plugins.repo.behaviors.impl.DestinationDirectory;
+import hudson.plugins.repo.behaviors.impl.ManifestBranch;
+import hudson.plugins.repo.behaviors.impl.ManifestFile;
+import hudson.plugins.repo.behaviors.impl.MirrorDir;
+import hudson.plugins.repo.behaviors.impl.Trace;
+import hudson.scm.ChangeLogParser;
+import hudson.scm.PollingResult;
+import hudson.scm.PollingResult.Change;
+import hudson.scm.SCM;
+import hudson.scm.SCMDescriptor;
+import hudson.scm.SCMRevisionState;
+import hudson.util.FormValidation;
+import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
+import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.export.Exported;
+import org.kohsuke.stapler.export.ExportedBean;
+
+import javax.annotation.CheckForNull;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -40,39 +77,6 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import hudson.EnvVars;
-import hudson.Extension;
-import hudson.FilePath;
-import hudson.Launcher;
-import hudson.Util;
-import hudson.model.Job;
-import hudson.model.ParameterDefinition;
-import hudson.model.ParametersDefinitionProperty;
-import hudson.model.Run;
-import hudson.model.StringParameterDefinition;
-import hudson.model.TaskListener;
-import hudson.scm.ChangeLogParser;
-import hudson.scm.PollingResult;
-import hudson.scm.SCM;
-import hudson.scm.SCMDescriptor;
-import hudson.scm.SCMRevisionState;
-import net.sf.json.JSONObject;
-
-import org.apache.commons.lang.StringUtils;
-import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.export.Exported;
-import org.kohsuke.stapler.export.ExportedBean;
-
-import hudson.scm.PollingResult.Change;
-import hudson.util.FormValidation;
-
-import javax.annotation.CheckForNull;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
 /**
  * The main entrypoint of the plugin. This class contains code to store user
  * configuration and to check out the code using a repo binary.
@@ -87,26 +91,26 @@ public class RepoScm extends SCM implements Serializable {
 	private final String manifestRepositoryUrl;
 
 	// Advanced Fields:
-	@CheckForNull private String manifestFile;
 	@CheckForNull private String manifestGroup;
 	@CheckForNull private String repoUrl;
-	@CheckForNull private String mirrorDir;
-	@CheckForNull private String manifestBranch;
+
 	@CheckForNull private int jobs;
 	@CheckForNull private int depth;
 	@CheckForNull private String localManifest;
-	@CheckForNull private String destinationDir;
+
 	@CheckForNull private boolean currentBranch;
 	@CheckForNull private boolean resetFirst;
 	@CheckForNull private boolean cleanFirst;
 	@CheckForNull private boolean quiet;
 	@CheckForNull private boolean forceSync;
-	@CheckForNull private boolean trace;
+
 	@CheckForNull private boolean showAllChanges;
 	@CheckForNull private boolean noTags;
 	@CheckForNull private Set<String> ignoreProjects;
 	@CheckForNull private EnvVars extraEnvVars;
 	@CheckForNull private boolean noCloneBundle;
+
+	private List<RepoScmBehavior<?>> behaviors;
 
 	/**
 	 * Returns the manifest repository URL.
@@ -122,7 +126,12 @@ public class RepoScm extends SCM implements Serializable {
 	 */
 	@Exported
 	public String getManifestBranch() {
-		return manifestBranch;
+		for (RepoScmBehavior<?> behavior : behaviors) {
+			if (behavior instanceof ManifestBranch) {
+				return ((ManifestBranch) behavior).getManifestBranch();
+			}
+		}
+		return null;
 	}
 
 	/**
@@ -170,9 +179,14 @@ public class RepoScm extends SCM implements Serializable {
 	 * Returns the initial manifest file name. By default, this is null and repo
 	 * defaults to "default.xml"
 	 */
-	@Exported
+	@Exported @Deprecated
 	public String getManifestFile() {
-		return manifestFile;
+		for (RepoScmBehavior<?> behavior : behaviors) {
+			if (behavior instanceof ManifestFile) {
+				return ((ManifestFile) behavior).getManifestFile();
+			}
+		}
+		return null;
 	}
 
 	/**
@@ -196,10 +210,16 @@ public class RepoScm extends SCM implements Serializable {
 	/**
 	 * Returns the name of the mirror directory. By default, this is null and
 	 * repo does not use a mirror.
+	 * @deprecated see {@link MirrorDir} and {@link #setBehaviors(List)}.
 	 */
-	@Exported
+	@Exported @Deprecated
 	public String getMirrorDir() {
-		return mirrorDir;
+		for (RepoScmBehavior<?> behavior : behaviors) {
+			if (behavior instanceof MirrorDir) {
+				return ((MirrorDir) behavior).getMirrorDir();
+			}
+		}
+		return null;
 	}
 
 	/**
@@ -232,9 +252,15 @@ public class RepoScm extends SCM implements Serializable {
 	 * Returns the destination directory. By default, this is null and the
 	 * source is synced to the root of the workspace.
 	 */
-	@Exported
+	@Deprecated
+	@CheckForNull
 	public String getDestinationDir() {
-		return destinationDir;
+		for (RepoScmBehavior<?> behavior : behaviors) {
+			if (behavior instanceof DestinationDirectory) {
+				return ((DestinationDirectory) behavior).getDestinationDir();
+			}
+		}
+		return null;
 	}
 
 	/**
@@ -293,10 +319,11 @@ public class RepoScm extends SCM implements Serializable {
 
 	/**
 	 * Returns the value of trace.
+	 * @deprecated see {@link Trace}
 	 */
-	@Exported
+	@Exported @Deprecated
 	public boolean isTrace() {
-		return trace;
+		return behaviors.stream().anyMatch(repoScmBehavior -> repoScmBehavior instanceof Trace);
 	}
 	/**
 	 * Returns the value of noTags.
@@ -319,6 +346,15 @@ public class RepoScm extends SCM implements Serializable {
 	@Exported
 	public Map<String, String> getExtraEnvVars() {
 		return extraEnvVars;
+	}
+
+	/**
+	 * The behaviours.
+	 * @return The behaviours.
+	 */
+	@Exported
+	public List<RepoScmBehavior<?>> getBehaviors() {
+		return behaviors;
 	}
 
 	/**
@@ -390,6 +426,7 @@ public class RepoScm extends SCM implements Serializable {
 		setShowAllChanges(showAllChanges);
 		setRepoUrl(repoUrl);
 		ignoreProjects = Collections.<String>emptySet();
+		behaviors = new ArrayList<>();
 	}
 
 	/**
@@ -398,28 +435,47 @@ public class RepoScm extends SCM implements Serializable {
 	 *
 	 * @param manifestRepositoryUrl The URL for the manifest repository.
 	 */
-	@DataBoundConstructor
+	@DataBoundConstructor //TODO
 	public RepoScm(final String manifestRepositoryUrl) {
 		this.manifestRepositoryUrl = manifestRepositoryUrl;
-		manifestFile = null;
 		manifestGroup = null;
 		repoUrl = null;
 		mirrorDir = null;
-		manifestBranch = null;
 		jobs = 0;
 		depth = 0;
 		localManifest = null;
-		destinationDir = null;
 		currentBranch = false;
 		resetFirst = false;
 		cleanFirst = false;
 		quiet = false;
 		forceSync = false;
-		trace = false;
 		showAllChanges = false;
 		noTags = false;
 		ignoreProjects = Collections.<String>emptySet();
 		noCloneBundle = false;
+		behaviors = new ArrayList<>();
+	}
+
+	/**
+	 * Behaviours.
+	 *
+	 * @param behaviors the extra command line options to set.
+	 */
+	@DataBoundSetter
+	public void setBehaviors(final List<RepoScmBehavior<?>> behaviors) {
+		this.behaviors = behaviors;
+		this.behaviors.sort(RepoScmBehaviorDescriptor.EXTENSION_COMPARATOR);
+	}
+
+	/**
+	 * Adds a unique behaviour to the list and sorts it.
+	 * @param behavior The behaviour to add.
+	 *                    If an existing behaviour of the same class is already present it will first be removed.
+	 */
+	void addBehavior(final RepoScmBehavior<?> behavior) {
+		behaviors.removeIf(b -> behavior.getClass().isInstance(b));
+		this.behaviors.add(behavior);
+		this.behaviors.sort(RepoScmBehaviorDescriptor.EXTENSION_COMPARATOR);
 	}
 
 	/**
@@ -429,10 +485,15 @@ public class RepoScm extends SCM implements Serializable {
 	 *        The branch of the manifest repository. Typically this is null
 	 *        or the empty string, which will cause repo to default to
 	 *        "master".
+	 * @deprecated see {@link ManifestBranch} and {@link #setBehaviors(List)}
      */
-	@DataBoundSetter
+	@DataBoundSetter @Deprecated
 	public void setManifestBranch(@CheckForNull final String manifestBranch) {
-		this.manifestBranch = Util.fixEmptyAndTrim(manifestBranch);
+		behaviors.removeIf(repoScmBehavior -> repoScmBehavior instanceof ManifestBranch);
+		String mb = Util.fixEmptyAndTrim(manifestBranch);
+		if (mb != null) {
+			addBehavior(new ManifestBranch(mb));
+		}
 	}
 
 	/**
@@ -441,10 +502,15 @@ public class RepoScm extends SCM implements Serializable {
 	 * @param manifestFile
 	 *        The file to use as the repository manifest. Typically this is
 	 *        null which will cause repo to use the default of "default.xml"
+	 * @deprecated see {@link ManifestFile} and {@link #setBehaviors(List)}
      */
-	@DataBoundSetter
+	@DataBoundSetter @Deprecated
 	public void setManifestFile(@CheckForNull final String manifestFile) {
-		this.manifestFile = Util.fixEmptyAndTrim(manifestFile);
+		behaviors.removeIf(repoScmBehavior -> repoScmBehavior instanceof ManifestFile);
+		String mf = Util.fixEmptyAndTrim(manifestFile);
+		if (mf != null) {
+			addBehavior(new ManifestFile(mf));
+		}
 	}
 
 	/**
@@ -466,10 +532,15 @@ public class RepoScm extends SCM implements Serializable {
 	 * @param mirrorDir
 	 *        The path of the mirror directory to reference when
 	 *        initializing repo.
+	 * @deprecated see {@link MirrorDir} and {@link #setBehaviors(List)}.
      */
-	@DataBoundSetter
+	@DataBoundSetter @Deprecated
 	public void setMirrorDir(@CheckForNull final String mirrorDir) {
-		this.mirrorDir = Util.fixEmptyAndTrim(mirrorDir);
+		behaviors.removeIf(repoScmBehavior -> repoScmBehavior instanceof MirrorDir);
+		String md = Util.fixEmptyAndTrim(mirrorDir);
+		if (md != null) {
+			addBehavior(new MirrorDir(md));
+		}
 	}
 
 	/**
@@ -516,10 +587,16 @@ public class RepoScm extends SCM implements Serializable {
 	 * @param destinationDir
 	 *        If not null then the source is synced to the destinationDir
 	 *        subdirectory of the workspace.
+	 * @deprecated see {@link DestinationDirectory}
      */
 	@DataBoundSetter
+	@Deprecated
 	public void setDestinationDir(@CheckForNull final String destinationDir) {
-		this.destinationDir = Util.fixEmptyAndTrim(destinationDir);
+		behaviors.removeIf(behavior -> behavior instanceof DestinationDirectory);
+		String d = Util.fixEmptyAndTrim(destinationDir);
+		if (d != null) {
+			addBehavior(new DestinationDirectory(destinationDir));
+		}
 	}
 
 	/**
@@ -576,11 +653,15 @@ public class RepoScm extends SCM implements Serializable {
 	 * @param trace
 	 *        If this value is true, add the "--trace" option when
 	 *        executing "repo init" and "repo sync".
+	 * @deprecated see {@link Trace} and {@link #setBehaviors(List)}.
      */
 
-	@DataBoundSetter
+	@DataBoundSetter @Deprecated
 	public void setTrace(final boolean trace) {
-		this.trace = trace;
+		behaviors.removeIf(behavior -> behavior instanceof Trace);
+		if (trace) {
+			addBehavior(new Trace());
+		}
 	}
 
 	/**
@@ -710,7 +791,8 @@ public class RepoScm extends SCM implements Serializable {
 			InterruptedException {
 		SCMRevisionState myBaseline = baseline;
 		final EnvVars env = getEnvVars(null, job);
-		final String expandedManifestBranch = env.expand(manifestBranch);
+		//TODO manifestBranch
+		final String expandedManifestBranch = env.expand(getManifestBranch());
 		final Run<?, ?> lastRun = job.getLastBuild();
 
 		if (myBaseline == SCMRevisionState.NONE) {
@@ -722,8 +804,9 @@ public class RepoScm extends SCM implements Serializable {
 		}
 
 		FilePath repoDir;
-		if (destinationDir != null) {
-			repoDir = workspace.child(env.expand(destinationDir));
+		String dstDir = getDestinationDir();
+		if (dstDir != null) {
+			repoDir = workspace.child(env.expand(dstDir));
 		} else {
 			repoDir = workspace;
 		}
@@ -732,7 +815,7 @@ public class RepoScm extends SCM implements Serializable {
 			repoDir.mkdirs();
 		}
 
-		if (!checkoutCode(launcher, repoDir, env, listener.getLogger())) {
+		if (!checkoutCode(launcher, repoDir, env, listener)) {
 			// Some error occurred, try a build now so it gets logged.
 			return new PollingResult(myBaseline, myBaseline,
 					Change.INCOMPARABLE);
@@ -769,8 +852,9 @@ public class RepoScm extends SCM implements Serializable {
 		env = getEnvVars(env, job);
 
 		FilePath repoDir;
-		if (destinationDir != null) {
-			repoDir = workspace.child(env.expand(destinationDir));
+		String destDirTrait = getDestinationDir();
+		if (StringUtils.isNotEmpty(destDirTrait)) {
+			repoDir = workspace.child(env.expand(destDirTrait));
 		} else {
 			repoDir = workspace;
 		}
@@ -779,14 +863,14 @@ public class RepoScm extends SCM implements Serializable {
 			repoDir.mkdirs();
 		}
 
-		if (!checkoutCode(launcher, repoDir, env, listener.getLogger())) {
+		if (!checkoutCode(launcher, repoDir, env, listener)) {
 			throw new IOException("Could not checkout");
 		}
 		final String manifest =
 				getStaticManifest(launcher, repoDir, listener.getLogger(), env);
 		final String manifestRevision =
 				getManifestRevision(launcher, repoDir, listener.getLogger(), env);
-		final String expandedBranch = env.expand(manifestBranch);
+		final String expandedBranch = env.expand(getManifestBranch());
 		final RevisionState currentState =
 				new RevisionState(manifest, manifestRevision, expandedBranch,
 						listener.getLogger());
@@ -809,7 +893,7 @@ public class RepoScm extends SCM implements Serializable {
 	}
 
 	private int doSync(final Launcher launcher, @Nonnull final FilePath workspace,
-			final OutputStream logger, final EnvVars env)
+					   @Nonnull final TaskListener listener, final EnvVars env)
 		throws IOException, InterruptedException {
 		final List<String> commands = new ArrayList<String>(4);
 		debug.log(Level.FINE, "Syncing out code in: " + workspace.getName());
@@ -819,8 +903,8 @@ public class RepoScm extends SCM implements Serializable {
 			commands.add("forall");
 			commands.add("-c");
 			commands.add("git reset --hard");
-			int resetCode = launcher.launch().stdout(logger)
-				.stderr(logger).pwd(workspace).cmds(commands).envs(env).join();
+			int resetCode = launcher.launch().stdout(listener.getLogger())
+				.stderr(listener.getLogger()).pwd(workspace).cmds(commands).envs(env).join();
 
 			if (resetCode != 0) {
 				debug.log(Level.WARNING, "Failed to reset first.");
@@ -832,8 +916,8 @@ public class RepoScm extends SCM implements Serializable {
 			commands.add("forall");
 			commands.add("-c");
 			commands.add("git clean -fdx");
-			int cleanCode = launcher.launch().stdout(logger)
-				.stderr(logger).pwd(workspace).cmds(commands).envs(env).join();
+			int cleanCode = launcher.launch().stdout(listener.getLogger())
+				.stderr(listener.getLogger()).pwd(workspace).cmds(commands).envs(env).join();
 
 			if (cleanCode != 0) {
 				debug.log(Level.WARNING, "Failed to clean first.");
@@ -865,34 +949,36 @@ public class RepoScm extends SCM implements Serializable {
 			commands.add("--no-clone-bundle");
 		}
 
-		return launcher.launch().stdout(logger).pwd(workspace)
+		return launcher.launch().stdout(listener.getLogger()).pwd(workspace)
                 .cmds(commands).envs(env).join();
 	}
 
 	private boolean checkoutCode(final Launcher launcher,
 			@Nonnull final FilePath workspace,
 			final EnvVars env,
-			final OutputStream logger)
+			@Nonnull final TaskListener listener)
 			throws IOException, InterruptedException {
 		final List<String> commands = new ArrayList<String>(4);
 
 		debug.log(Level.INFO, "Checking out code in: {0}", workspace.getName());
 
 		commands.add(getDescriptor().getExecutable());
-		if (trace) {
-		    commands.add("--trace");
-		}
+
 		commands.add("init");
 		commands.add("-u");
 		commands.add(env.expand(manifestRepositoryUrl));
-		if (manifestBranch != null) {
-			commands.add("-b");
-			commands.add(env.expand(manifestBranch));
+
+		boolean decorationSuccess = true;
+		for (RepoScmBehavior<?> behavior : behaviors) {
+			if (!behavior.decorateInit(commands, env, listener)) {
+				decorationSuccess = false;
+			}
 		}
-		if (manifestFile != null) {
-			commands.add("-m");
-			commands.add(env.expand(manifestFile));
+		if (!decorationSuccess) {
+			return false;
 		}
+
+
 		if (mirrorDir != null) {
 			commands.add("--reference=" + env.expand(mirrorDir));
 		}
@@ -911,7 +997,7 @@ public class RepoScm extends SCM implements Serializable {
 			commands.add("--no-clone-bundle");
 		}
 		int returnCode =
-				launcher.launch().stdout(logger).pwd(workspace)
+				launcher.launch().stdout(listener.getLogger()).pwd(workspace)
 						.cmds(commands).envs(env).join();
 		if (returnCode != 0) {
 			return false;
@@ -938,7 +1024,7 @@ public class RepoScm extends SCM implements Serializable {
 			}
 		//}
 
-		returnCode = doSync(launcher, workspace, logger, env);
+		returnCode = doSync(launcher, workspace, listener, env);
 		if (returnCode != 0) {
 			debug.log(Level.WARNING, "Sync failed. Resetting repository");
 			commands.clear();
@@ -946,9 +1032,9 @@ public class RepoScm extends SCM implements Serializable {
 			commands.add("forall");
 			commands.add("-c");
 			commands.add("git reset --hard");
-			launcher.launch().stdout(logger).pwd(workspace).cmds(commands)
+			launcher.launch().stdout(listener.getLogger()).pwd(workspace).cmds(commands)
 				.envs(env).join();
-			returnCode = doSync(launcher, workspace, logger, env);
+			returnCode = doSync(launcher, workspace, listener, env);
 			if (returnCode != 0) {
 				return false;
 			}
@@ -1033,6 +1119,41 @@ public class RepoScm extends SCM implements Serializable {
 			.toString();
 	}
 
+	@Deprecated @CheckForNull private transient String destinationDir;
+	@Deprecated @CheckForNull private transient String manifestBranch;
+	@Deprecated @CheckForNull private transient String manifestFile;
+	@Deprecated @CheckForNull private transient boolean trace;
+	@Deprecated @CheckForNull private transient String mirrorDir;
+
+	/**
+	 * Converts old data to new behaviour format.
+	 * @return the modified object if any
+	 */
+	public Object readResolve() {
+		if (behaviors == null) {
+			List<RepoScmBehavior<?>> b = new ArrayList<>();
+			if (StringUtils.isNotEmpty(destinationDir)) {
+				b.add(new DestinationDirectory(destinationDir));
+			}
+			if (trace) {
+				b.add(new Trace());
+			}
+			if (StringUtils.isNotEmpty(manifestBranch)) {
+				b.add(new ManifestBranch(manifestBranch));
+			}
+			if (StringUtils.isNotEmpty(manifestFile)) {
+				b.add(new ManifestFile(manifestFile));
+			}
+			if (StringUtils.isNotEmpty(mirrorDir)) {
+				b.add(new MirrorDir(mirrorDir));
+			}
+
+			b.sort(RepoScmBehaviorDescriptor.EXTENSION_COMPARATOR);
+		}
+
+		return this;
+	}
+
 	/**
 	 * A DescriptorImpl contains variables used server-wide. In our263 case, we
 	 * only store the path to the repo executable, which defaults to just
@@ -1089,6 +1210,15 @@ public class RepoScm extends SCM implements Serializable {
 			} else {
 				return repoExecutable;
 			}
+		}
+
+		/**
+		 * Lists all extensions of {@link RepoScmBehaviorDescriptor}.
+		 *
+		 * @return the descriptors
+		 */
+		public List<RepoScmBehaviorDescriptor> getBehaviourDescriptors() {
+			return RepoScmBehaviorDescriptor.all();
 		}
 
 		@Override

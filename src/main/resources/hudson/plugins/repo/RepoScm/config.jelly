@@ -13,13 +13,14 @@
 
 	<f:advanced>
 
-		<f:entry title="Manifest Branch" help="/plugin/repo/help-manifestBranch.html" field="manifestBranch">
-			<f:textbox/>
+		<f:entry title="${%Behaviors}" field="behaviors">
+			<f:hetero-list descriptors="${descriptor.getBehaviourDescriptors()}" items="${instance.behaviors}" name="behaviors"
+						   hasHeader="true" oneEach="true" honorOrder="true"/>
 		</f:entry>
 
-		<f:entry title="Manifest File" help="/plugin/repo/help-manifestFile.html" field="manifestFile">
-			<f:textbox/>
-		</f:entry>
+
+
+
 
 		<f:entry title="Group" help="/plugin/repo/help-manifestGroup.html" field="manifestGroup">
 			<f:textbox/>
@@ -29,17 +30,13 @@
 			<f:textarea rows="3" />
 		</f:entry>
 
-		<f:entry title="Destination Directory" help="/plugin/repo/help-destinationDir.html" field="destinationDir">
-			<f:textbox/>
-		</f:entry>
+
 
 		<f:entry title="Repo Url" help="/plugin/repo/help-repoUrl.html" field="repoUrl">
 			<f:textbox/>
 		</f:entry>
 
-		<f:entry title="Mirror Directory" help="/plugin/repo/help-mirrorDir.html" field="mirrorDir">
-			<f:textbox/>
-		</f:entry>
+
 
 		<f:entry title="Jobs" help="/plugin/repo/help-jobs.html" field="jobs">
 			<f:textbox clazz="number"/>
@@ -69,10 +66,6 @@
 		</f:entry>
 
 		<f:entry title="No tags" help="/plugin/repo/help-noTags.html" field="noTags">
-			<f:checkbox/>
-		</f:entry>
-
-		<f:entry title="Trace" help="/plugin/repo/help-trace.html" field="trace">
 			<f:checkbox/>
 		</f:entry>
 

@@ -16,7 +16,7 @@
   <url>https://github.com/jenkinsci/repo-plugin/blob/master/doc/README.adoc</url>
 
   <properties>
-    <jenkins.version>2.60.3</jenkins.version>
+    <jenkins.version>2.107.3</jenkins.version>
     <java.level>8</java.level>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -82,6 +82,8 @@
           <configLocation>checkstyle.xml</configLocation>
           <failsOnError>true</failsOnError>
           <consoleOutput>true</consoleOutput>
+          <suppressionsLocation>checkstyle-suppressions.xml</suppressionsLocation>
+          <suppressionsFileExpression>checkstyle.suppressions.file</suppressionsFileExpression>
         </configuration>
         <executions>
           <execution>
