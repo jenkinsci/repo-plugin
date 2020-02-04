@@ -1,0 +1,8 @@
+<?jelly escape-by-default='true'?>
+
+<a href="${rootURL}/${it.run.url}${it.urlName}">
+    <img width="16" height="16"
+        tooltip="${it.displayName}"
+        alt="[manifest]"
+        src="${imagesURL}/16x16/${it.iconFileName}"/>
+</a>

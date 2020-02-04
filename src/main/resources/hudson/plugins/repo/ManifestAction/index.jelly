@@ -8,13 +8,15 @@
 	xmlns:f="/lib/form">
 
 	<l:layout title="Repo">
-		<st:include it="${it.run}" page="sidepanel.jelly" />
+		<l:side-panel>
+			<st:include page="sidepanel.jelly" it="${it.run}" optional="true" />
+		</l:side-panel>
 		<l:main-panel>
-			<h1>Repo Manifest - Build #${it.build.number}</h1>	
+			<h1>Repo Manifest - Build #${it.run.number}</h1>
 			To recreate this build, copy the below manifest and past it to .repo/manifest.xml, then run 'repo sync'.
 			When done, be sure to undo changes to the .repo/manifest.xml file and repo sync again.
-			
-			Manifest File:<br /><br />
+			<br/><br/>
+			Manifest File:<br/><br/>
 			<textarea rows="15" cols="140">${it.manifest}</textarea>
 		</l:main-panel>
 	</l:layout>

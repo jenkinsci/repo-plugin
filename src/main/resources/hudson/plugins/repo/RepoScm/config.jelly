@@ -25,6 +25,10 @@
 		<f:entry title="Group" help="/plugin/repo/help-manifestGroup.html" field="manifestGroup">
 			<f:textbox/>
 		</f:entry>
+
+		<f:entry title="Platform" help="/plugin/repo/help-manifestPlatform.html" field="manifestPlatform">
+			<f:textbox/>
+		</f:entry>
 		
 		<f:entry title="IgnoreChanges" help="/plugin/repo/help-ignoreChanges.html" field="ignoreProjects">
 			<f:textarea rows="3" />
@@ -48,6 +52,14 @@
 
 		<f:entry title="Current Branch" help="/plugin/repo/help-currentBranch.html" field="currentBranch">
 			<f:checkbox default="true"/>
+		</f:entry>
+
+		<f:entry title="Sync manifest submodules" help="/plugin/repo/help-manifestSubmodules.html" field="manifestSubmodules">
+			<f:checkbox default="false"/>
+		</f:entry>
+
+		<f:entry title="Fetch submodules" help="/plugin/repo/help-fetchSubmodules.html" field="fetchSubmodules">
+			<f:checkbox default="false"/>
 		</f:entry>
 
 		<f:entry title="Reset first" help="/plugin/repo/help-resetFirst.html" field="resetFirst">
