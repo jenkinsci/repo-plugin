@@ -41,13 +41,13 @@ public abstract class RepoScmBehavior<T extends RepoScmBehavior<T>> extends Abst
     /**
      * Decorate the <code>repo init</code> commandline.
      *
-     * @param commandline the current commandline
+     * @param commands the current commandline
      * @param env the environment
      * @param listener for logging
      * @return true if continue with the call false if abort
      * @throws TraitApplicationException if something happened that needs the user's attention
      */
-    public boolean decorateInit(@Nonnull final List<String> commandline,
+    public boolean decorateInit(@Nonnull final List<String> commands,
                                 final EnvVars env,
                                 @Nonnull final TaskListener listener)
             throws TraitApplicationException {
@@ -57,13 +57,13 @@ public abstract class RepoScmBehavior<T extends RepoScmBehavior<T>> extends Abst
     /**
      * Decorate the <code>repo sync</code> commandline.
      *
-     * @param commandline the current commandline
+     * @param commands the current commandline
      * @param env the environment
      * @param listener for logging
      * @return true if continue with the call false if abort
      * @throws TraitApplicationException if something happened that needs the user's attention
      */
-    public boolean decorateSync(@Nonnull final List<String> commandline,
+    public boolean decorateSync(@Nonnull final List<String> commands,
                                 final EnvVars env,
                                 @Nonnull final TaskListener listener)
             throws TraitApplicationException {

@@ -39,54 +39,54 @@ import javax.annotation.Nonnull;
 import java.util.List;
 
 /**
- * Git Reference directory.
+ * The group of projects to fetch. By default repo will fetch the default group.
  */
 @ExportedBean
-public class MirrorDir extends RepoScmBehavior<MirrorDir> {
+public class ManifestGroup extends RepoScmBehavior<ManifestGroup> {
 
     @Nonnull
-    private final String mirrorDir;
+    private final String manifestGroup;
 
     /**
      * Databound constructor.
      *
-     * @param mirrorDir the location of the reference root dir.
+     * @param manifestGroup the group
      */
     @DataBoundConstructor
-    public MirrorDir(@Nonnull final String mirrorDir) {
-        if (StringUtils.isEmpty(mirrorDir)) {
+    public ManifestGroup(@Nonnull final String manifestGroup) {
+        if (StringUtils.isEmpty(manifestGroup)) {
             throw new IllegalArgumentException("empty");
         }
-        this.mirrorDir = mirrorDir;
+        this.manifestGroup = manifestGroup;
     }
 
     @Override
     public boolean decorateInit(@Nonnull final List<String> commands,
                                 final EnvVars env,
                                 @Nonnull final TaskListener listener) throws TraitApplicationException {
-        commands.add("--reference=" + env.expand(mirrorDir));
+        commands.add("-g");
+        commands.add(env.expand(manifestGroup));
         return true;
     }
 
     /**
-     * The reference directory.
-     * @return the mirror dir
+     * Returns the group of projects to fetch.
+     * @return the group
      */
     @Nonnull @Exported
-    public String getMirrorDir() {
-        return mirrorDir;
+    public String getManifestGroup() {
+        return manifestGroup;
     }
 
     /**
      * The descriptor.
      */
-    @Extension(ordinal = 50)
-    public static final class DescriptorImpl extends RepoScmBehaviorDescriptor<MirrorDir> {
-
+    @Extension(ordinal = 70)
+    public static final class DescriptorImpl extends RepoScmBehaviorDescriptor<ManifestGroup> {
         @Nonnull
         @Override
         public String getDisplayName() {
-            return Messages.MirrorDir_DescriptorImpl_DisplayName();
+            return Messages.ManifestGroup_DescriptorImpl_DisplayName();
         }
     }
 }

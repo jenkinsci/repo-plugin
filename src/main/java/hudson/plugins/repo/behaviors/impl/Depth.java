@@ -30,63 +30,57 @@ import hudson.model.TaskListener;
 import hudson.plugins.repo.behaviors.RepoScmBehavior;
 import hudson.plugins.repo.behaviors.RepoScmBehaviorDescriptor;
 import hudson.plugins.repo.behaviors.TraitApplicationException;
-import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.export.ExportedBean;
 
 import javax.annotation.Nonnull;
 import java.util.List;
 
 /**
- * Git Reference directory.
+ * The depth used for sync.  By default repo will sync the entire history.
  */
 @ExportedBean
-public class MirrorDir extends RepoScmBehavior<MirrorDir> {
+public class Depth extends RepoScmBehavior<Depth> {
 
-    @Nonnull
-    private final String mirrorDir;
+    private final int depth;
 
     /**
      * Databound constructor.
      *
-     * @param mirrorDir the location of the reference root dir.
+     * @param depth the depth where 0 means full history
      */
     @DataBoundConstructor
-    public MirrorDir(@Nonnull final String mirrorDir) {
-        if (StringUtils.isEmpty(mirrorDir)) {
-            throw new IllegalArgumentException("empty");
-        }
-        this.mirrorDir = mirrorDir;
+    public Depth(final int depth) {
+        this.depth = depth;
     }
 
     @Override
     public boolean decorateInit(@Nonnull final List<String> commands,
                                 final EnvVars env,
                                 @Nonnull final TaskListener listener) throws TraitApplicationException {
-        commands.add("--reference=" + env.expand(mirrorDir));
+        if (depth != 0) {
+            commands.add("--depth=" + depth);
+        }
         return true;
     }
 
     /**
-     * The reference directory.
-     * @return the mirror dir
+     * Returns the depth used for sync.  By default repo will sync the entire history.
+     * @return the depth
      */
-    @Nonnull @Exported
-    public String getMirrorDir() {
-        return mirrorDir;
+    public int getDepth() {
+        return depth;
     }
 
     /**
      * The descriptor.
      */
-    @Extension(ordinal = 50)
-    public static final class DescriptorImpl extends RepoScmBehaviorDescriptor<MirrorDir> {
-
+    @Extension(ordinal = 90)
+    public static final class DescriptorImpl extends RepoScmBehaviorDescriptor<Depth> {
         @Nonnull
         @Override
         public String getDisplayName() {
-            return Messages.MirrorDir_DescriptorImpl_DisplayName();
+            return Messages.Depth_DescriptorImpl_DisplayName();
         }
     }
 }

@@ -30,63 +30,50 @@ import hudson.model.TaskListener;
 import hudson.plugins.repo.behaviors.RepoScmBehavior;
 import hudson.plugins.repo.behaviors.RepoScmBehaviorDescriptor;
 import hudson.plugins.repo.behaviors.TraitApplicationException;
-import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.export.ExportedBean;
 
 import javax.annotation.Nonnull;
 import java.util.List;
 
 /**
- * Git Reference directory.
+ * Add the "--no-clone-bundle" option when running the "repo init" and "repo sync" commands.
  */
 @ExportedBean
-public class MirrorDir extends RepoScmBehavior<MirrorDir> {
-
-    @Nonnull
-    private final String mirrorDir;
+public class NoCloneBundle extends RepoScmBehavior<NoCloneBundle> {
 
     /**
-     * Databound constructor.
-     *
-     * @param mirrorDir the location of the reference root dir.
+     * Default databound constructor.
      */
     @DataBoundConstructor
-    public MirrorDir(@Nonnull final String mirrorDir) {
-        if (StringUtils.isEmpty(mirrorDir)) {
-            throw new IllegalArgumentException("empty");
-        }
-        this.mirrorDir = mirrorDir;
+    public NoCloneBundle() {
     }
 
     @Override
     public boolean decorateInit(@Nonnull final List<String> commands,
-                                final EnvVars env,
-                                @Nonnull final TaskListener listener) throws TraitApplicationException {
-        commands.add("--reference=" + env.expand(mirrorDir));
+                                final EnvVars env, @Nonnull
+                                    final TaskListener listener) throws TraitApplicationException {
+        commands.add("--no-clone-bundle");
         return true;
     }
 
-    /**
-     * The reference directory.
-     * @return the mirror dir
-     */
-    @Nonnull @Exported
-    public String getMirrorDir() {
-        return mirrorDir;
+    @Override
+    public boolean decorateSync(@Nonnull final List<String> commands,
+                                final EnvVars env, @Nonnull
+                                    final TaskListener listener) throws TraitApplicationException {
+        commands.add("--no-clone-bundle");
+        return true;
     }
 
     /**
      * The descriptor.
      */
-    @Extension(ordinal = 50)
-    public static final class DescriptorImpl extends RepoScmBehaviorDescriptor<MirrorDir> {
-
+    @Extension(ordinal = 100)
+    public static final class DescriptorImpl extends RepoScmBehaviorDescriptor<NoCloneBundle> {
         @Nonnull
         @Override
         public String getDisplayName() {
-            return Messages.MirrorDir_DescriptorImpl_DisplayName();
+            return Messages.NoCloneBundle_DescriptorImpl_DisplayName();
         }
     }
 }

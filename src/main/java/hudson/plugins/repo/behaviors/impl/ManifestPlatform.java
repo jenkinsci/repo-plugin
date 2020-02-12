@@ -39,54 +39,56 @@ import javax.annotation.Nonnull;
 import java.util.List;
 
 /**
- * Git Reference directory.
+ * The platform of projects to fetch. By default repo will automatically fetch the appropriate platform.
  */
 @ExportedBean
-public class MirrorDir extends RepoScmBehavior<MirrorDir> {
+public class ManifestPlatform extends RepoScmBehavior<ManifestPlatform> {
 
     @Nonnull
-    private final String mirrorDir;
+    private final String manifestPlatform;
 
     /**
      * Databound constructor.
      *
-     * @param mirrorDir the location of the reference root dir.
+     * @param manifestPlatform the platform
      */
     @DataBoundConstructor
-    public MirrorDir(@Nonnull final String mirrorDir) {
-        if (StringUtils.isEmpty(mirrorDir)) {
+    public ManifestPlatform(@Nonnull final String manifestPlatform) {
+        if (StringUtils.isEmpty(manifestPlatform)) {
             throw new IllegalArgumentException("empty");
         }
-        this.mirrorDir = mirrorDir;
+        this.manifestPlatform = manifestPlatform;
     }
 
     @Override
     public boolean decorateInit(@Nonnull final List<String> commands,
                                 final EnvVars env,
                                 @Nonnull final TaskListener listener) throws TraitApplicationException {
-        commands.add("--reference=" + env.expand(mirrorDir));
+        commands.add("-p");
+        commands.add(env.expand(manifestPlatform));
         return true;
     }
 
     /**
-     * The reference directory.
-     * @return the mirror dir
+     * The platform of projects to fetch.
+     *
+     * @return The platform of projects to fetch.
      */
-    @Nonnull @Exported
-    public String getMirrorDir() {
-        return mirrorDir;
+    @Nonnull
+    @Exported
+    public String getManifestPlatform() {
+        return manifestPlatform;
     }
 
     /**
      * The descriptor.
      */
-    @Extension(ordinal = 50)
-    public static final class DescriptorImpl extends RepoScmBehaviorDescriptor<MirrorDir> {
-
+    @Extension(ordinal = 80)
+    public static final class DescriptorImpl extends RepoScmBehaviorDescriptor<ManifestPlatform> {
         @Nonnull
         @Override
         public String getDisplayName() {
-            return Messages.MirrorDir_DescriptorImpl_DisplayName();
+            return Messages.ManifestPlatform_DescriptorImpl_DisplayName();
         }
     }
 }

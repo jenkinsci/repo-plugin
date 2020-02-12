@@ -36,10 +36,15 @@ import hudson.model.StringParameterDefinition;
 import hudson.model.TaskListener;
 import hudson.plugins.repo.behaviors.RepoScmBehavior;
 import hudson.plugins.repo.behaviors.RepoScmBehaviorDescriptor;
+import hudson.plugins.repo.behaviors.impl.Depth;
 import hudson.plugins.repo.behaviors.impl.DestinationDirectory;
 import hudson.plugins.repo.behaviors.impl.ManifestBranch;
 import hudson.plugins.repo.behaviors.impl.ManifestFile;
+import hudson.plugins.repo.behaviors.impl.ManifestGroup;
+import hudson.plugins.repo.behaviors.impl.ManifestPlatform;
 import hudson.plugins.repo.behaviors.impl.MirrorDir;
+import hudson.plugins.repo.behaviors.impl.NoCloneBundle;
+import hudson.plugins.repo.behaviors.impl.RepoUrl;
 import hudson.plugins.repo.behaviors.impl.Trace;
 import hudson.scm.ChangeLogParser;
 import hudson.scm.PollingResult;
@@ -91,12 +96,12 @@ public class RepoScm extends SCM implements Serializable {
 	private final String manifestRepositoryUrl;
 
 	// Advanced Fields:
-	@CheckForNull private String manifestGroup;
-	@CheckForNull private String manifestPlatform;
-	@CheckForNull private String repoUrl;
+
+
+
 
 	@CheckForNull private int jobs;
-	@CheckForNull private int depth;
+
 	@CheckForNull private String localManifest;
 
 	@CheckForNull private boolean currentBranch;
@@ -111,7 +116,7 @@ public class RepoScm extends SCM implements Serializable {
 	@CheckForNull private boolean fetchSubmodules;
 	@CheckForNull private Set<String> ignoreProjects;
 	@CheckForNull private EnvVars extraEnvVars;
-	@CheckForNull private boolean noCloneBundle;
+
 
 	private List<RepoScmBehavior<?>> behaviors;
 
@@ -182,7 +187,7 @@ public class RepoScm extends SCM implements Serializable {
 	 * Returns the initial manifest file name. By default, this is null and repo
 	 * defaults to "default.xml"
 	 */
-	@Exported @Deprecated
+	@Exported @CheckForNull @Deprecated
 	public String getManifestFile() {
 		for (RepoScmBehavior<?> behavior : behaviors) {
 			if (behavior instanceof ManifestFile) {
@@ -195,28 +200,49 @@ public class RepoScm extends SCM implements Serializable {
 	/**
 	 * Returns the group of projects to fetch. By default, this is null and
 	 * repo will fetch the default group.
+	 *
+	 * @deprecated see {@link ManifestGroup}
 	 */
-	@Exported
+	@Exported @CheckForNull @Deprecated
 	public String getManifestGroup() {
-		return manifestGroup;
+		for (RepoScmBehavior<?> behavior : behaviors) {
+			if (behavior instanceof ManifestGroup) {
+				return ((ManifestGroup) behavior).getManifestGroup();
+			}
+		}
+		return null;
 	}
 
 	/**
 	 * Returns the platform of projects to fetch. By default, this is null and
 	 * repo will automatically fetch the appropriate platform.
+	 *
+	 * @deprecated see {@link ManifestPlatform}.
 	 */
-	@CheckForNull
+	@CheckForNull @Deprecated
 	public String getManifestPlatform() {
-		return manifestPlatform;
+		for (RepoScmBehavior<?> behavior : behaviors) {
+			if (behavior instanceof ManifestPlatform) {
+				return ((ManifestPlatform) behavior).getManifestPlatform();
+			}
+		}
+		return null;
 	}
 
 	/**
 	 * Returns the repo url. by default, this is null and
 	 * repo is fetched from aosp
+	 *
+	 * @deprecated see {@link RepoUrl} and {@link #getBehaviors()}
 	 */
-	@Exported
+	@Exported @Deprecated @CheckForNull
 	public String getRepoUrl() {
-		return repoUrl;
+		for (RepoScmBehavior<?> behavior : behaviors) {
+			if (behavior instanceof RepoUrl) {
+				return ((RepoUrl) behavior).getRepoUrl();
+			}
+		}
+		return null;
 	}
 
 	/**
@@ -246,10 +272,17 @@ public class RepoScm extends SCM implements Serializable {
 	/**
 	 * Returns the depth used for sync.  By default, this is null and repo
 	 * will sync the entire history.
+	 *
+	 * @deprecated see {@link Depth}
 	 */
-	@Exported
+	@Exported @Deprecated
 	public int getDepth() {
-		return depth;
+		for (RepoScmBehavior<?> behavior : behaviors) {
+			if (behavior instanceof Depth) {
+				return ((Depth) behavior).getDepth();
+			}
+		}
+		return 0;
 	}
 	/**
 	 * Returns the contents of the local_manifests/local.xml. By default, this is null
@@ -348,10 +381,17 @@ public class RepoScm extends SCM implements Serializable {
 	}
 	/**
 	 * Returns the value of noCloneBundle.
+	 *
+	 * @deprecated see {@link NoCloneBundle}.
 	 */
-	@Exported
+	@Exported @Deprecated
 	public boolean isNoCloneBundle() {
-		return noCloneBundle;
+		for (RepoScmBehavior<?> behavior : behaviors) {
+			if (behavior instanceof NoCloneBundle) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -467,11 +507,7 @@ public class RepoScm extends SCM implements Serializable {
 	@DataBoundConstructor //TODO
 	public RepoScm(final String manifestRepositoryUrl) {
 		this.manifestRepositoryUrl = manifestRepositoryUrl;
-		manifestGroup = null;
-		repoUrl = null;
-		mirrorDir = null;
 		jobs = 0;
-		depth = 0;
 		localManifest = null;
 		currentBranch = false;
 		resetFirst = false;
@@ -483,7 +519,6 @@ public class RepoScm extends SCM implements Serializable {
 		manifestSubmodules = false;
 		fetchSubmodules = false;
 		ignoreProjects = Collections.<String>emptySet();
-		noCloneBundle = false;
 		behaviors = new ArrayList<>();
 	}
 
@@ -554,7 +589,11 @@ public class RepoScm extends SCM implements Serializable {
      */
 	@DataBoundSetter
 	public void setManifestGroup(@CheckForNull final String manifestGroup) {
-		this.manifestGroup = Util.fixEmptyAndTrim(manifestGroup);
+		behaviors.removeIf(repoScmBehavior -> repoScmBehavior instanceof ManifestGroup);
+		String mg = Util.fixEmptyAndTrim(manifestGroup);
+		if (mg != null) {
+			addBehavior(new ManifestGroup(mg));
+		}
 	}
 
 	/**
@@ -564,10 +603,16 @@ public class RepoScm extends SCM implements Serializable {
 	 *        The platform for the projects that need to be fetched.
 	 *        Typically, this is null and only projects for the current platform
 	 *        will be fetched.
+	 *
+	 * @deprecated see {@link ManifestPlatform}.
 	 */
-	@DataBoundSetter
+	@DataBoundSetter @Deprecated
 	public void setManifestPlatform(@CheckForNull final String manifestPlatform) {
-		this.manifestPlatform = Util.fixEmptyAndTrim(manifestPlatform);
+		behaviors.removeIf(repoScmBehavior -> repoScmBehavior instanceof ManifestPlatform);
+		String mp = Util.fixEmptyAndTrim(manifestPlatform);
+		if (mp != null) {
+			addBehavior(new ManifestPlatform(mp));
+		}
 	}
 
 	/**
@@ -605,10 +650,15 @@ public class RepoScm extends SCM implements Serializable {
 	 * @param depth
 	 *        This is the depth to use when syncing.  By default this is 0
 	 *        and the full history is synced.
+	 *
+	 * @deprecated see {@link Depth}
      */
-	@DataBoundSetter
+	@DataBoundSetter @Deprecated
 	public void setDepth(final int depth) {
-		this.depth = depth;
+		behaviors.removeIf(behavior -> behavior instanceof Depth);
+		if (depth != 0) {
+			addBehavior(new Depth(depth));
+		}
 	}
 
 	/**
@@ -726,10 +776,15 @@ public class RepoScm extends SCM implements Serializable {
 	 * @param noCloneBundle
 	 *        If this value is true, add the "--no-clone-bundle" option when
 	 *        running the "repo init" and "repo sync" commands.
+	 *
+	 * @deprecated see {@link NoCloneBundle}
      */
-	@DataBoundSetter
+	@DataBoundSetter @Deprecated
 	public void setNoCloneBundle(final boolean noCloneBundle) {
-		this.noCloneBundle = noCloneBundle;
+		behaviors.removeIf(behavior -> behavior instanceof NoCloneBundle);
+		if (noCloneBundle) {
+			addBehavior(new NoCloneBundle());
+		}
 	}
 
 	/**
@@ -738,10 +793,16 @@ public class RepoScm extends SCM implements Serializable {
 	 * @param repoUrl
 	 *        If not null then use this url as repo base,
 	 *        instead of the default
+	 *
+	 * @deprecated see {@link RepoUrl}
      */
-	@DataBoundSetter
+	@DataBoundSetter @Deprecated
 	public void setRepoUrl(@CheckForNull final String repoUrl) {
-		this.repoUrl = Util.fixEmptyAndTrim(repoUrl);
+		behaviors.removeIf(behavior -> behavior instanceof RepoUrl);
+		String ru = Util.fixEmptyAndTrim(repoUrl);
+		if (ru != null) {
+			addBehavior(new RepoUrl(ru));
+		}
 	}
 
 	/**
@@ -1013,9 +1074,7 @@ public class RepoScm extends SCM implements Serializable {
 		if (isNoTags()) {
 			commands.add("--no-tags");
 		}
-		if (isNoCloneBundle()) {
-			commands.add("--no-clone-bundle");
-		}
+
 		if (fetchSubmodules) {
 			commands.add("--fetch-submodules");
 		}
@@ -1048,28 +1107,6 @@ public class RepoScm extends SCM implements Serializable {
 			return false;
 		}
 
-
-		if (mirrorDir != null) {
-			commands.add("--reference=" + env.expand(mirrorDir));
-		}
-		if (repoUrl != null) {
-			commands.add("--repo-url=" + env.expand(repoUrl));
-			commands.add("--no-repo-verify");
-		}
-		if (manifestGroup != null) {
-			commands.add("-g");
-			commands.add(env.expand(manifestGroup));
-		}
-		if (manifestPlatform != null) {
-			commands.add("-p");
-			commands.add(env.expand(manifestPlatform));
-		}
-		if (depth != 0) {
-			commands.add("--depth=" + depth);
-		}
-		if (isNoCloneBundle()) {
-			commands.add("--no-clone-bundle");
-		}
 		if (currentBranch) {
 			commands.add("--current-branch");
 		}
@@ -1207,6 +1244,11 @@ public class RepoScm extends SCM implements Serializable {
 	@Deprecated @CheckForNull private transient String manifestFile;
 	@Deprecated @CheckForNull private transient boolean trace;
 	@Deprecated @CheckForNull private transient String mirrorDir;
+	@Deprecated @CheckForNull private transient String repoUrl;
+	@Deprecated @CheckForNull private transient String manifestGroup;
+	@Deprecated @CheckForNull private transient String manifestPlatform;
+	@Deprecated @CheckForNull private transient int depth;
+	@Deprecated @CheckForNull private transient boolean noCloneBundle;
 
 	/**
 	 * Converts old data to new behaviour format.
@@ -1230,8 +1272,24 @@ public class RepoScm extends SCM implements Serializable {
 			if (StringUtils.isNotEmpty(mirrorDir)) {
 				b.add(new MirrorDir(mirrorDir));
 			}
+			if (StringUtils.isNotEmpty(repoUrl)) {
+				b.add(new RepoUrl(repoUrl));
+			}
+			if (StringUtils.isNotEmpty(manifestGroup)) {
+				b.add(new ManifestGroup(manifestGroup));
+			}
+			if (StringUtils.isNotEmpty(manifestPlatform)) {
+				b.add(new ManifestPlatform(manifestPlatform));
+			}
+			if (depth != 0) {
+				b.add(new Depth(depth));
+			}
+			if (noCloneBundle) {
+				b.add(new NoCloneBundle());
+			}
 
 			b.sort(RepoScmBehaviorDescriptor.EXTENSION_COMPARATOR);
+			this.behaviors = b;
 		}
 
 		return this;

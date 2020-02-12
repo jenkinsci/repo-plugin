@@ -6,7 +6,7 @@
         xmlns:l="/lib/layout"
         xmlns:t="/lib/hudson"
         xmlns:f="/lib/form">
-    <f:entry title="Mirror Directory" help="/plugin/repo/help-mirrorDir.html" field="mirrorDir">
+    <f:entry title="Repo Url" help="/plugin/repo/help-repoUrl.html" field="repoUrl">
         <f:textbox/>
     </f:entry>
 </j:jelly>

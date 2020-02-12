@@ -39,54 +39,52 @@ import javax.annotation.Nonnull;
 import java.util.List;
 
 /**
- * Git Reference directory.
+ * The repo url. By default, repo is fetched from AOSP.
  */
 @ExportedBean
-public class MirrorDir extends RepoScmBehavior<MirrorDir> {
+public class RepoUrl extends RepoScmBehavior<RepoUrl> {
 
-    @Nonnull
-    private final String mirrorDir;
+    @Nonnull private final String repoUrl;
 
     /**
      * Databound constructor.
-     *
-     * @param mirrorDir the location of the reference root dir.
+     * @param repoUrl The repo url.
      */
     @DataBoundConstructor
-    public MirrorDir(@Nonnull final String mirrorDir) {
-        if (StringUtils.isEmpty(mirrorDir)) {
+    public RepoUrl(@Nonnull final String repoUrl) {
+        if (StringUtils.isEmpty(repoUrl)) {
             throw new IllegalArgumentException("empty");
         }
-        this.mirrorDir = mirrorDir;
+        this.repoUrl = repoUrl;
     }
 
     @Override
     public boolean decorateInit(@Nonnull final List<String> commands,
                                 final EnvVars env,
                                 @Nonnull final TaskListener listener) throws TraitApplicationException {
-        commands.add("--reference=" + env.expand(mirrorDir));
+        commands.add("--repo-url=" + env.expand(repoUrl));
+        commands.add("--no-repo-verify");
         return true;
     }
 
     /**
-     * The reference directory.
-     * @return the mirror dir
+     * The repo url.
+     * @return The repo url.
      */
     @Nonnull @Exported
-    public String getMirrorDir() {
-        return mirrorDir;
+    public String getRepoUrl() {
+        return repoUrl;
     }
 
     /**
      * The descriptor.
      */
-    @Extension(ordinal = 50)
-    public static final class DescriptorImpl extends RepoScmBehaviorDescriptor<MirrorDir> {
-
+    @Extension(ordinal = 60)
+    public static final class DescriptorImpl extends RepoScmBehaviorDescriptor<RepoUrl> {
         @Nonnull
         @Override
         public String getDisplayName() {
-            return Messages.MirrorDir_DescriptorImpl_DisplayName();
+            return Messages.RepoUrl_DescriptorImpl_DisplayName();
         }
     }
 }

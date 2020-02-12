@@ -22,13 +22,9 @@
 
 
 
-		<f:entry title="Group" help="/plugin/repo/help-manifestGroup.html" field="manifestGroup">
-			<f:textbox/>
-		</f:entry>
 
-		<f:entry title="Platform" help="/plugin/repo/help-manifestPlatform.html" field="manifestPlatform">
-			<f:textbox/>
-		</f:entry>
+
+
 		
 		<f:entry title="IgnoreChanges" help="/plugin/repo/help-ignoreChanges.html" field="ignoreProjects">
 			<f:textarea rows="3" />
@@ -36,9 +32,7 @@
 
 
 
-		<f:entry title="Repo Url" help="/plugin/repo/help-repoUrl.html" field="repoUrl">
-			<f:textbox/>
-		</f:entry>
+
 
 
 
@@ -46,9 +40,7 @@
 			<f:textbox clazz="number"/>
 		</f:entry>
 
-		<f:entry title="Depth" help="/plugin/repo/help-depth.html" field="depth">
-			<f:textbox clazz="number" />
-		</f:entry>
+
 
 		<f:entry title="Current Branch" help="/plugin/repo/help-currentBranch.html" field="currentBranch">
 			<f:checkbox default="true"/>
@@ -87,10 +79,6 @@
 
 		<f:entry title="Local Manifest" help="/plugin/repo/help-localManifest.html" field="localManifest">
 			<f:textarea rows="10" />
-		</f:entry>
-
-		<f:entry title="No Clone Bundle" help="/plugin/repo/help-noCloneBundle.html" field="noCloneBundle">
-			<f:checkbox/>
 		</f:entry>
 
 	</f:advanced>
