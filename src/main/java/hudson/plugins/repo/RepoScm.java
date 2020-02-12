@@ -36,6 +36,7 @@ import hudson.model.StringParameterDefinition;
 import hudson.model.TaskListener;
 import hudson.plugins.repo.behaviors.RepoScmBehavior;
 import hudson.plugins.repo.behaviors.RepoScmBehaviorDescriptor;
+import hudson.plugins.repo.behaviors.impl.CurrentBranch;
 import hudson.plugins.repo.behaviors.impl.Depth;
 import hudson.plugins.repo.behaviors.impl.DestinationDirectory;
 import hudson.plugins.repo.behaviors.impl.ManifestBranch;
@@ -104,7 +105,7 @@ public class RepoScm extends SCM implements Serializable {
 
 	@CheckForNull private String localManifest;
 
-	@CheckForNull private boolean currentBranch;
+
 	@CheckForNull private boolean resetFirst;
 	@CheckForNull private boolean cleanFirst;
 	@CheckForNull private boolean quiet;
@@ -319,10 +320,12 @@ public class RepoScm extends SCM implements Serializable {
 
 	/**
 	 * Returns the value of currentBranch.
+	 *
+	 * @deprecated see {@link CurrentBranch}.
 	 */
-	@Exported
+	@Exported @Deprecated
 	public boolean isCurrentBranch() {
-		return currentBranch;
+		return behaviors.stream().anyMatch(CurrentBranch.class::isInstance);
 	}
 	/**
 	 * Returns the value of resetFirst.
@@ -369,7 +372,7 @@ public class RepoScm extends SCM implements Serializable {
 	 */
 	@Exported @Deprecated
 	public boolean isTrace() {
-		return behaviors.stream().anyMatch(repoScmBehavior -> repoScmBehavior instanceof Trace);
+		return behaviors.stream().anyMatch(Trace.class::isInstance);
 	}
 
 	/**
@@ -386,12 +389,7 @@ public class RepoScm extends SCM implements Serializable {
 	 */
 	@Exported @Deprecated
 	public boolean isNoCloneBundle() {
-		for (RepoScmBehavior<?> behavior : behaviors) {
-			if (behavior instanceof NoCloneBundle) {
-				return true;
-			}
-		}
-		return false;
+		return behaviors.stream().anyMatch(NoCloneBundle.class::isInstance);
 	}
 
 	/**
@@ -509,7 +507,6 @@ public class RepoScm extends SCM implements Serializable {
 		this.manifestRepositoryUrl = manifestRepositoryUrl;
 		jobs = 0;
 		localManifest = null;
-		currentBranch = false;
 		resetFirst = false;
 		cleanFirst = false;
 		quiet = false;
@@ -686,7 +683,7 @@ public class RepoScm extends SCM implements Serializable {
 	@DataBoundSetter
 	@Deprecated
 	public void setDestinationDir(@CheckForNull final String destinationDir) {
-		behaviors.removeIf(behavior -> behavior instanceof DestinationDirectory);
+		behaviors.removeIf(DestinationDirectory.class::isInstance);
 		String d = Util.fixEmptyAndTrim(destinationDir);
 		if (d != null) {
 			addBehavior(new DestinationDirectory(destinationDir));
@@ -699,10 +696,15 @@ public class RepoScm extends SCM implements Serializable {
 	 * @param currentBranch
 	 * 		  If this value is true, add the "-c" option when executing
 	 *        "repo sync".
+	 *
+	 * @deprecated see {@link CurrentBranch}
      */
-	@DataBoundSetter
+	@DataBoundSetter @Deprecated
 	public void setCurrentBranch(final boolean currentBranch) {
-		this.currentBranch = currentBranch;
+		behaviors.removeIf(CurrentBranch.class::isInstance);
+		if (currentBranch) {
+			addBehavior(new CurrentBranch());
+		}
 	}
 
 	/**
@@ -1059,9 +1061,7 @@ public class RepoScm extends SCM implements Serializable {
 		}
 		commands.add("sync");
 		commands.add("-d");
-		if (isCurrentBranch()) {
-			commands.add("-c");
-		}
+
 		if (isQuiet()) {
 			commands.add("-q");
 		}
@@ -1107,9 +1107,6 @@ public class RepoScm extends SCM implements Serializable {
 			return false;
 		}
 
-		if (currentBranch) {
-			commands.add("--current-branch");
-		}
 		if (noTags) {
 			commands.add("--no-tags");
 		}
@@ -1249,6 +1246,7 @@ public class RepoScm extends SCM implements Serializable {
 	@Deprecated @CheckForNull private transient String manifestPlatform;
 	@Deprecated @CheckForNull private transient int depth;
 	@Deprecated @CheckForNull private transient boolean noCloneBundle;
+	@Deprecated @CheckForNull private transient boolean currentBranch;
 
 	/**
 	 * Converts old data to new behaviour format.
@@ -1286,6 +1284,9 @@ public class RepoScm extends SCM implements Serializable {
 			}
 			if (noCloneBundle) {
 				b.add(new NoCloneBundle());
+			}
+			if (currentBranch) {
+				b.add(new CurrentBranch());
 			}
 
 			b.sort(RepoScmBehaviorDescriptor.EXTENSION_COMPARATOR);
