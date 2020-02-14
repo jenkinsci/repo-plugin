@@ -54,6 +54,15 @@ public abstract class RepoScmBehaviorDescriptor<T extends RepoScmBehavior<T>> ex
     };
 
     /**
+     * Return a new instance of the behaviour if one should be added by default.
+     *
+     * @return a new instance or null
+     */
+    public RepoScmBehavior<T> defaultOrNull() {
+        return null;
+    }
+
+    /**
      * Lists all extensions of this class.
      *
      * @return the descriptors

@@ -43,8 +43,10 @@ import hudson.plugins.repo.behaviors.impl.ManifestBranch;
 import hudson.plugins.repo.behaviors.impl.ManifestFile;
 import hudson.plugins.repo.behaviors.impl.ManifestGroup;
 import hudson.plugins.repo.behaviors.impl.ManifestPlatform;
+import hudson.plugins.repo.behaviors.impl.ManifestSubmodules;
 import hudson.plugins.repo.behaviors.impl.MirrorDir;
 import hudson.plugins.repo.behaviors.impl.NoCloneBundle;
+import hudson.plugins.repo.behaviors.impl.NoTags;
 import hudson.plugins.repo.behaviors.impl.RepoUrl;
 import hudson.plugins.repo.behaviors.impl.Trace;
 import hudson.scm.ChangeLogParser;
@@ -97,10 +99,6 @@ public class RepoScm extends SCM implements Serializable {
 	private final String manifestRepositoryUrl;
 
 	// Advanced Fields:
-
-
-
-
 	@CheckForNull private int jobs;
 
 	@CheckForNull private String localManifest;
@@ -112,8 +110,8 @@ public class RepoScm extends SCM implements Serializable {
 	@CheckForNull private boolean forceSync;
 
 	@CheckForNull private boolean showAllChanges;
-	@CheckForNull private boolean noTags;
-	@CheckForNull private boolean manifestSubmodules;
+
+
 	@CheckForNull private boolean fetchSubmodules;
 	@CheckForNull private Set<String> ignoreProjects;
 	@CheckForNull private EnvVars extraEnvVars;
@@ -377,10 +375,12 @@ public class RepoScm extends SCM implements Serializable {
 
 	/**
 	 * Returns the value of noTags.
+	 *
+	 * @deprecated see {@link NoTags}.
 	 */
-	@Exported
+	@Exported @Deprecated
 	public boolean isNoTags() {
-		return noTags;
+		return behaviors.stream().anyMatch(NoTags.class::isInstance);
 	}
 	/**
 	 * Returns the value of noCloneBundle.
@@ -394,10 +394,12 @@ public class RepoScm extends SCM implements Serializable {
 
 	/**
 	 * Returns the value of manifestSubmodules.
+	 *
+	 * @deprecated see {@link ManifestSubmodules}.
 	 */
-	@Exported
+	@Exported @Deprecated
 	public boolean isManifestSubmodules() {
-		return manifestSubmodules;
+		return behaviors.stream().anyMatch(ManifestSubmodules.class::isInstance);
 	}
 
 	/**
@@ -493,7 +495,7 @@ public class RepoScm extends SCM implements Serializable {
 		setShowAllChanges(showAllChanges);
 		setRepoUrl(repoUrl);
 		ignoreProjects = Collections.<String>emptySet();
-		behaviors = new ArrayList<>();
+
 	}
 
 	/**
@@ -512,11 +514,10 @@ public class RepoScm extends SCM implements Serializable {
 		quiet = false;
 		forceSync = false;
 		showAllChanges = false;
-		noTags = false;
-		manifestSubmodules = false;
 		fetchSubmodules = false;
 		ignoreProjects = Collections.<String>emptySet();
 		behaviors = new ArrayList<>();
+		//behaviors.add(new CurrentBranch());
 	}
 
 	/**
@@ -552,7 +553,7 @@ public class RepoScm extends SCM implements Serializable {
      */
 	@DataBoundSetter @Deprecated
 	public void setManifestBranch(@CheckForNull final String manifestBranch) {
-		behaviors.removeIf(repoScmBehavior -> repoScmBehavior instanceof ManifestBranch);
+		behaviors.removeIf(ManifestBranch.class::isInstance);
 		String mb = Util.fixEmptyAndTrim(manifestBranch);
 		if (mb != null) {
 			addBehavior(new ManifestBranch(mb));
@@ -569,7 +570,7 @@ public class RepoScm extends SCM implements Serializable {
      */
 	@DataBoundSetter @Deprecated
 	public void setManifestFile(@CheckForNull final String manifestFile) {
-		behaviors.removeIf(repoScmBehavior -> repoScmBehavior instanceof ManifestFile);
+		behaviors.removeIf(ManifestFile.class::isInstance);
 		String mf = Util.fixEmptyAndTrim(manifestFile);
 		if (mf != null) {
 			addBehavior(new ManifestFile(mf));
@@ -586,7 +587,7 @@ public class RepoScm extends SCM implements Serializable {
      */
 	@DataBoundSetter
 	public void setManifestGroup(@CheckForNull final String manifestGroup) {
-		behaviors.removeIf(repoScmBehavior -> repoScmBehavior instanceof ManifestGroup);
+		behaviors.removeIf(ManifestGroup.class::isInstance);
 		String mg = Util.fixEmptyAndTrim(manifestGroup);
 		if (mg != null) {
 			addBehavior(new ManifestGroup(mg));
@@ -605,7 +606,7 @@ public class RepoScm extends SCM implements Serializable {
 	 */
 	@DataBoundSetter @Deprecated
 	public void setManifestPlatform(@CheckForNull final String manifestPlatform) {
-		behaviors.removeIf(repoScmBehavior -> repoScmBehavior instanceof ManifestPlatform);
+		behaviors.removeIf(ManifestPlatform.class::isInstance);
 		String mp = Util.fixEmptyAndTrim(manifestPlatform);
 		if (mp != null) {
 			addBehavior(new ManifestPlatform(mp));
@@ -622,7 +623,7 @@ public class RepoScm extends SCM implements Serializable {
      */
 	@DataBoundSetter @Deprecated
 	public void setMirrorDir(@CheckForNull final String mirrorDir) {
-		behaviors.removeIf(repoScmBehavior -> repoScmBehavior instanceof MirrorDir);
+		behaviors.removeIf(MirrorDir.class::isInstance);
 		String md = Util.fixEmptyAndTrim(mirrorDir);
 		if (md != null) {
 			addBehavior(new MirrorDir(md));
@@ -652,7 +653,7 @@ public class RepoScm extends SCM implements Serializable {
      */
 	@DataBoundSetter @Deprecated
 	public void setDepth(final int depth) {
-		behaviors.removeIf(behavior -> behavior instanceof Depth);
+		behaviors.removeIf(Depth.class::isInstance);
 		if (depth != 0) {
 			addBehavior(new Depth(depth));
 		}
@@ -754,7 +755,7 @@ public class RepoScm extends SCM implements Serializable {
 
 	@DataBoundSetter @Deprecated
 	public void setTrace(final boolean trace) {
-		behaviors.removeIf(behavior -> behavior instanceof Trace);
+		behaviors.removeIf(Trace.class::isInstance);
 		if (trace) {
 			addBehavior(new Trace());
 		}
@@ -783,7 +784,7 @@ public class RepoScm extends SCM implements Serializable {
      */
 	@DataBoundSetter @Deprecated
 	public void setNoCloneBundle(final boolean noCloneBundle) {
-		behaviors.removeIf(behavior -> behavior instanceof NoCloneBundle);
+		behaviors.removeIf(NoCloneBundle.class::isInstance);
 		if (noCloneBundle) {
 			addBehavior(new NoCloneBundle());
 		}
@@ -800,7 +801,7 @@ public class RepoScm extends SCM implements Serializable {
      */
 	@DataBoundSetter @Deprecated
 	public void setRepoUrl(@CheckForNull final String repoUrl) {
-		behaviors.removeIf(behavior -> behavior instanceof RepoUrl);
+		behaviors.removeIf(RepoUrl.class::isInstance);
 		String ru = Util.fixEmptyAndTrim(repoUrl);
 		if (ru != null) {
 			addBehavior(new RepoUrl(ru));
@@ -824,10 +825,14 @@ public class RepoScm extends SCM implements Serializable {
 	 * @param noTags
 	 *            If this value is true, add the "--no-tags" option when
 	 *            executing "repo sync".
+	 * @deprecated see {@link NoTags}.
 	 */
-	@DataBoundSetter
+	@DataBoundSetter @Deprecated
 	public final void setNoTags(final boolean noTags) {
-		this.noTags = noTags;
+		behaviors.removeIf(NoTags.class::isInstance);
+		if (noTags) {
+			addBehavior(new NoTags());
+		}
 	}
 
 	/**
@@ -836,10 +841,14 @@ public class RepoScm extends SCM implements Serializable {
 	 * @param manifestSubmodules
 	 *            If this value is true, add the "--submodules" option when
 	 *            executing "repo init".
+	 * @deprecated see {@link ManifestSubmodules}
 	 */
-	@DataBoundSetter
+	@DataBoundSetter @Deprecated
 	public void setManifestSubmodules(final boolean manifestSubmodules) {
-		this.manifestSubmodules = manifestSubmodules;
+		behaviors.removeIf(ManifestSubmodules.class::isInstance);
+		if (manifestSubmodules) {
+			addBehavior(new ManifestSubmodules());
+		}
 	}
 
 	/**
@@ -1056,9 +1065,7 @@ public class RepoScm extends SCM implements Serializable {
 			commands.clear();
 		}
 		commands.add(getDescriptor().getExecutable());
-		if (trace) {
-		    commands.add("--trace");
-		}
+
 		commands.add("sync");
 		commands.add("-d");
 
@@ -1071,9 +1078,7 @@ public class RepoScm extends SCM implements Serializable {
 		if (jobs > 0) {
 			commands.add("--jobs=" + jobs);
 		}
-		if (isNoTags()) {
-			commands.add("--no-tags");
-		}
+
 
 		if (fetchSubmodules) {
 			commands.add("--fetch-submodules");
@@ -1107,12 +1112,6 @@ public class RepoScm extends SCM implements Serializable {
 			return false;
 		}
 
-		if (noTags) {
-			commands.add("--no-tags");
-		}
-		if (manifestSubmodules) {
-			commands.add("--submodules");
-		}
 		int returnCode =
 				launcher.launch().stdout(listener.getLogger()).pwd(workspace)
 						.cmds(commands).envs(env).join();
@@ -1247,6 +1246,8 @@ public class RepoScm extends SCM implements Serializable {
 	@Deprecated @CheckForNull private transient int depth;
 	@Deprecated @CheckForNull private transient boolean noCloneBundle;
 	@Deprecated @CheckForNull private transient boolean currentBranch;
+	@Deprecated @CheckForNull private transient boolean noTags;
+	@Deprecated @CheckForNull private transient boolean manifestSubmodules;
 
 	/**
 	 * Converts old data to new behaviour format.
@@ -1288,6 +1289,12 @@ public class RepoScm extends SCM implements Serializable {
 			if (currentBranch) {
 				b.add(new CurrentBranch());
 			}
+			if (noTags) {
+				b.add(new NoTags());
+			}
+			if (manifestSubmodules) {
+				b.add(new ManifestSubmodules());
+			}
 
 			b.sort(RepoScmBehaviorDescriptor.EXTENSION_COMPARATOR);
 			this.behaviors = b;
@@ -1312,6 +1319,29 @@ public class RepoScm extends SCM implements Serializable {
 		public DescriptorImpl() {
 			super(null);
 			load();
+		}
+
+		/**
+		 * Gets the behaviours from the instance or, if null, a list of default behaviours.
+		 *
+		 * @param instance the instance to get the behaviours from.
+		 * @return a list of behaviours
+		 * @see RepoScm#getBehaviors()
+		 * @see RepoScmBehaviorDescriptor#defaultOrNull()
+		 */
+		public List<RepoScmBehavior<?>> getBehavioursOrDefaults(final RepoScm instance) {
+			if (instance != null) {
+				return instance.getBehaviors();
+			}
+
+			List<RepoScmBehavior<?>> defaults = new ArrayList<>();
+			for (RepoScmBehaviorDescriptor<?> rd : RepoScmBehaviorDescriptor.all()) {
+				RepoScmBehavior<?> behavior = rd.defaultOrNull();
+				if (behavior != null) {
+					defaults.add(behavior);
+				}
+			}
+			return defaults;
 		}
 
 		@Override

@@ -75,5 +75,10 @@ public class CurrentBranch extends RepoScmBehavior<CurrentBranch> {
         public String getDisplayName() {
             return Messages.CurrentBranch_DescriptorImpl_DisplayName();
         }
+
+        @Override
+        public RepoScmBehavior<CurrentBranch> defaultOrNull() {
+            return new CurrentBranch();
+        }
     }
 }

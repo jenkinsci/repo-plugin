@@ -2,7 +2,7 @@
  * The MIT License
  *
  * Copyright (c) 2010, Brad Larson
- * Copyright (c) 2019, CloudBees Inc.
+ * Copyright (c) 2020, CloudBees Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -37,23 +37,23 @@ import javax.annotation.Nonnull;
 import java.util.List;
 
 /**
- * Adds {@code --trace} to the repo command.
+ * <code>--no-tags</code>.
  */
 @ExportedBean
-public class Trace extends RepoScmBehavior<Trace> {
+public class NoTags extends RepoScmBehavior<NoTags> {
 
     /**
      * Default databound constructor.
      */
     @DataBoundConstructor
-    public Trace() {
+    public NoTags() {
     }
 
     @Override
     public boolean decorateInit(@Nonnull final List<String> commands,
                                 final EnvVars env,
                                 @Nonnull final TaskListener listener) throws TraitApplicationException {
-        commands.add(1, "--trace");
+        commands.add("--no-tags");
         return true;
     }
 
@@ -61,19 +61,20 @@ public class Trace extends RepoScmBehavior<Trace> {
     public boolean decorateSync(@Nonnull final List<String> commands,
                                 final EnvVars env,
                                 @Nonnull final TaskListener listener) throws TraitApplicationException {
-        commands.add(1, "--trace");
+        commands.add("--no-tags");
         return true;
     }
 
     /**
      * The descriptor.
      */
-    @Extension(ordinal = 20)
-    public static class DescriptorImpl extends RepoScmBehaviorDescriptor<Trace> {
+    @Extension(ordinal = 120)
+    public static final class DescriptorImpl extends RepoScmBehaviorDescriptor<NoTags> {
+
         @Nonnull
         @Override
         public String getDisplayName() {
-            return Messages.Trace_DescriptorImpl_DisplayName();
+            return Messages.NoTags_DescriptorImpl_DisplayName();
         }
     }
 }

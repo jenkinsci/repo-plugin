@@ -14,7 +14,7 @@
 	<f:advanced>
 
 		<f:entry title="${%Behaviors}" field="behaviors">
-			<f:hetero-list descriptors="${descriptor.getBehaviourDescriptors()}" items="${instance.behaviors}" name="behaviors"
+			<f:hetero-list descriptors="${descriptor.getBehaviourDescriptors()}" items="${descriptor.getBehavioursOrDefaults(instance)}" name="behaviors"
 						   hasHeader="true" oneEach="true" honorOrder="true"/>
 		</f:entry>
 
@@ -46,9 +46,6 @@
 			<f:checkbox default="true"/>
 		</f:entry>
 
-		<f:entry title="Sync manifest submodules" help="/plugin/repo/help-manifestSubmodules.html" field="manifestSubmodules">
-			<f:checkbox default="false"/>
-		</f:entry>
 
 		<f:entry title="Fetch submodules" help="/plugin/repo/help-fetchSubmodules.html" field="fetchSubmodules">
 			<f:checkbox default="false"/>

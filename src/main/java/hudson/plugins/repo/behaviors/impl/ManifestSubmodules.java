@@ -2,7 +2,7 @@
  * The MIT License
  *
  * Copyright (c) 2010, Brad Larson
- * Copyright (c) 2019, CloudBees Inc.
+ * Copyright (c) 2020, CloudBees Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -37,43 +37,35 @@ import javax.annotation.Nonnull;
 import java.util.List;
 
 /**
- * Adds {@code --trace} to the repo command.
+ * <code>--submodules</code>.
  */
 @ExportedBean
-public class Trace extends RepoScmBehavior<Trace> {
+public class ManifestSubmodules extends RepoScmBehavior<ManifestSubmodules> {
 
     /**
      * Default databound constructor.
      */
     @DataBoundConstructor
-    public Trace() {
+    public ManifestSubmodules() {
     }
 
     @Override
     public boolean decorateInit(@Nonnull final List<String> commands,
                                 final EnvVars env,
                                 @Nonnull final TaskListener listener) throws TraitApplicationException {
-        commands.add(1, "--trace");
-        return true;
-    }
-
-    @Override
-    public boolean decorateSync(@Nonnull final List<String> commands,
-                                final EnvVars env,
-                                @Nonnull final TaskListener listener) throws TraitApplicationException {
-        commands.add(1, "--trace");
+        commands.add("--submodules");
         return true;
     }
 
     /**
      * The descriptor.
      */
-    @Extension(ordinal = 20)
-    public static class DescriptorImpl extends RepoScmBehaviorDescriptor<Trace> {
+    @Extension(ordinal = 130)
+    public static final class DescriptorImpl extends RepoScmBehaviorDescriptor<ManifestSubmodules> {
         @Nonnull
         @Override
         public String getDisplayName() {
-            return Messages.Trace_DescriptorImpl_DisplayName();
+            return Messages.ManifestSubmodules_DescriptorImpl_DisplayName();
         }
     }
 }
