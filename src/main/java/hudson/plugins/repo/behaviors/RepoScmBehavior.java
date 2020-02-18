@@ -25,6 +25,7 @@
 package hudson.plugins.repo.behaviors;
 
 import hudson.EnvVars;
+import hudson.FilePath;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.TaskListener;
 
@@ -62,11 +63,28 @@ public abstract class RepoScmBehavior<T extends RepoScmBehavior<T>> extends Abst
      * @param listener for logging
      * @return true if continue with the call false if abort
      * @throws TraitApplicationException if something happened that needs the user's attention
+     *   and aborts all future decorations.
      */
     public boolean decorateSync(@Nonnull final List<String> commands,
                                 final EnvVars env,
                                 @Nonnull final TaskListener listener)
             throws TraitApplicationException {
+        return true;
+    }
+
+    /**
+     * Called just after a successful <code>repo init</code>.
+     *
+     * @param workspace the workspace where repo init was performed.
+     * @param env the environment
+     * @param listener for logging
+     * @return true if continue with the call false if abort
+     * @throws TraitApplicationException if something happened that needs the user's attention
+     *      and aborts all future operations.
+     */
+    public boolean postInit(final FilePath workspace,
+                            final EnvVars env,
+                            @Nonnull final TaskListener listener) throws TraitApplicationException {
         return true;
     }
 }

@@ -39,6 +39,7 @@ import hudson.plugins.repo.behaviors.RepoScmBehaviorDescriptor;
 import hudson.plugins.repo.behaviors.impl.CurrentBranch;
 import hudson.plugins.repo.behaviors.impl.Depth;
 import hudson.plugins.repo.behaviors.impl.DestinationDirectory;
+import hudson.plugins.repo.behaviors.impl.LocalManifest;
 import hudson.plugins.repo.behaviors.impl.ManifestBranch;
 import hudson.plugins.repo.behaviors.impl.ManifestFile;
 import hudson.plugins.repo.behaviors.impl.ManifestGroup;
@@ -73,7 +74,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
-import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -101,7 +101,7 @@ public class RepoScm extends SCM implements Serializable {
 	// Advanced Fields:
 	@CheckForNull private int jobs;
 
-	@CheckForNull private String localManifest;
+
 
 
 	@CheckForNull private boolean resetFirst;
@@ -286,10 +286,17 @@ public class RepoScm extends SCM implements Serializable {
 	/**
 	 * Returns the contents of the local_manifests/local.xml. By default, this is null
 	 * and a local_manifests/local.xml is neither created nor modified.
+	 *
+	 * @deprecated see {@link LocalManifest}
 	 */
-	@Exported
+	@Exported @Deprecated
 	public String getLocalManifest() {
-		return localManifest;
+		for (RepoScmBehavior<?> behavior : behaviors) {
+			if (behavior instanceof LocalManifest) {
+				return ((LocalManifest) behavior).getLocalManifest();
+			}
+		}
+		return null;
 	}
 
 	/**
@@ -508,7 +515,6 @@ public class RepoScm extends SCM implements Serializable {
 	public RepoScm(final String manifestRepositoryUrl) {
 		this.manifestRepositoryUrl = manifestRepositoryUrl;
 		jobs = 0;
-		localManifest = null;
 		resetFirst = false;
 		cleanFirst = false;
 		quiet = false;
@@ -667,10 +673,16 @@ public class RepoScm extends SCM implements Serializable {
 	 *        If XML, this string is written to .repo/local_manifests/local.xml
 	 *        If an URL, the URL is fetched and the content is written
 	 *        to .repo/local_manifests/local.xml
+	 *
+	 * @deprecated see {@link LocalManifest}
      */
-	@DataBoundSetter
+	@DataBoundSetter @Deprecated
 	public void setLocalManifest(@CheckForNull final String localManifest) {
-		this.localManifest = Util.fixEmptyAndTrim(localManifest);
+		behaviors.removeIf(LocalManifest.class::isInstance);
+		String lm = Util.fixEmptyAndTrim(localManifest);
+		if (lm != null) {
+			addBehavior(new LocalManifest(lm));
+		}
 	}
 
 	/**
@@ -1118,27 +1130,26 @@ public class RepoScm extends SCM implements Serializable {
 		if (returnCode != 0) {
 			return false;
 		}
-		//{
-			FilePath rdir = workspace.child(".repo");
-			FilePath lmdir = rdir.child("local_manifests");
-			// Delete the legacy local_manifest.xml in case it exists from a previous build
-			rdir.child("local_manifest.xml").delete();
-			if (lmdir.exists()) {
-				lmdir.deleteContents();
-			} else {
-				lmdir.mkdirs();
+
+		FilePath rdir = LocalManifest.dotRepo(workspace);
+		FilePath lmdir = LocalManifest.localManifests(rdir);
+		// Delete the legacy local_manifest.xml in case it exists from a previous build
+		rdir.child("local_manifest.xml").delete();
+		if (lmdir.exists()) {
+			lmdir.deleteContents();
+		} else {
+			lmdir.mkdirs();
+		}
+
+		boolean postInitSuccess = true;
+		for (RepoScmBehavior<?> behavior : behaviors) {
+			if (!behavior.postInit(workspace, env, listener)) {
+				postInitSuccess = false;
 			}
-			if (localManifest != null) {
-				FilePath lm = lmdir.child("local.xml");
-				String expandedLocalManifest = env.expand(localManifest);
-				if (expandedLocalManifest.startsWith("<?xml")) {
-					lm.write(expandedLocalManifest, null);
-				} else {
-					URL url = new URL(expandedLocalManifest);
-					lm.copyFrom(url);
-				}
-			}
-		//}
+		}
+		if (!postInitSuccess) {
+			return false;
+		}
 
 		returnCode = doSync(launcher, workspace, listener, env);
 		if (returnCode != 0) {
@@ -1248,6 +1259,7 @@ public class RepoScm extends SCM implements Serializable {
 	@Deprecated @CheckForNull private transient boolean currentBranch;
 	@Deprecated @CheckForNull private transient boolean noTags;
 	@Deprecated @CheckForNull private transient boolean manifestSubmodules;
+	@Deprecated @CheckForNull private transient String localManifest;
 
 	/**
 	 * Converts old data to new behaviour format.
@@ -1294,6 +1306,9 @@ public class RepoScm extends SCM implements Serializable {
 			}
 			if (manifestSubmodules) {
 				b.add(new ManifestSubmodules());
+			}
+			if (StringUtils.isNotEmpty(localManifest)) {
+				b.add(new LocalManifest(localManifest));
 			}
 
 			b.sort(RepoScmBehaviorDescriptor.EXTENSION_COMPARATOR);

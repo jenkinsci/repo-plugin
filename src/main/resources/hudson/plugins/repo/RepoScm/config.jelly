@@ -18,34 +18,13 @@
 						   hasHeader="true" oneEach="true" honorOrder="true"/>
 		</f:entry>
 
-
-
-
-
-
-
-
-		
 		<f:entry title="IgnoreChanges" help="/plugin/repo/help-ignoreChanges.html" field="ignoreProjects">
 			<f:textarea rows="3" />
 		</f:entry>
 
-
-
-
-
-
-
 		<f:entry title="Jobs" help="/plugin/repo/help-jobs.html" field="jobs">
 			<f:textbox clazz="number"/>
 		</f:entry>
-
-
-
-		<f:entry title="Current Branch" help="/plugin/repo/help-currentBranch.html" field="currentBranch">
-			<f:checkbox default="true"/>
-		</f:entry>
-
 
 		<f:entry title="Fetch submodules" help="/plugin/repo/help-fetchSubmodules.html" field="fetchSubmodules">
 			<f:checkbox default="false"/>
@@ -66,17 +45,11 @@
 			<f:checkbox/>
 		</f:entry>
 
-		<f:entry title="No tags" help="/plugin/repo/help-noTags.html" field="noTags">
-			<f:checkbox/>
-		</f:entry>
-
 		<f:entry title="Show all changes" help="/plugin/repo/help-showAllChanges.html" field="showAllChanges">
 			<f:checkbox/>
 		</f:entry>
 
-		<f:entry title="Local Manifest" help="/plugin/repo/help-localManifest.html" field="localManifest">
-			<f:textarea rows="10" />
-		</f:entry>
+
 
 	</f:advanced>
 </j:jelly>
