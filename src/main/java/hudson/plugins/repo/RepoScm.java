@@ -41,7 +41,9 @@ import hudson.plugins.repo.behaviors.impl.CleanFirst;
 import hudson.plugins.repo.behaviors.impl.CurrentBranch;
 import hudson.plugins.repo.behaviors.impl.Depth;
 import hudson.plugins.repo.behaviors.impl.DestinationDirectory;
+import hudson.plugins.repo.behaviors.impl.FetchSubmodules;
 import hudson.plugins.repo.behaviors.impl.ForceSync;
+import hudson.plugins.repo.behaviors.impl.Jobs;
 import hudson.plugins.repo.behaviors.impl.LocalManifest;
 import hudson.plugins.repo.behaviors.impl.ManifestBranch;
 import hudson.plugins.repo.behaviors.impl.ManifestFile;
@@ -105,7 +107,7 @@ public class RepoScm extends SCM implements Serializable {
 
 	// Advanced Fields:
 
-	@CheckForNull private int jobs;
+
 
 
 
@@ -118,7 +120,7 @@ public class RepoScm extends SCM implements Serializable {
 	@CheckForNull private boolean showAllChanges;
 
 
-	@CheckForNull private boolean fetchSubmodules;
+
 	@CheckForNull private Set<String> ignoreProjects;
 	@CheckForNull private EnvVars extraEnvVars;
 
@@ -286,10 +288,17 @@ public class RepoScm extends SCM implements Serializable {
 	/**
 	 * Returns the number of jobs used for sync. By default, this is null and
 	 * repo does not use concurrent jobs.
+	 *
+	 * @deprecated see {@link Jobs}
 	 */
-	@Exported
+	@Exported @Deprecated
 	public int getJobs() {
-		return jobs;
+		for (RepoScmBehavior<?> behavior : behaviors) {
+			if (behavior instanceof Jobs) {
+				return ((Jobs) behavior).getJobs();
+			}
+		}
+		return 0;
 	}
 
 	/**
@@ -443,9 +452,12 @@ public class RepoScm extends SCM implements Serializable {
 
 	/**
 	 * Returns the value of fetchSubmodules.
+	 *
+	 * @deprecated see {@link FetchSubmodules}
 	 */
+	@Deprecated
 	public boolean isFetchSubmodules() {
-		return fetchSubmodules;
+		return behaviors.stream().anyMatch(FetchSubmodules.class::isInstance);
 	}
 
 	/**
@@ -546,9 +558,7 @@ public class RepoScm extends SCM implements Serializable {
 	@DataBoundConstructor //TODO
 	public RepoScm(final String manifestRepositoryUrl) {
 		this.manifestRepositoryUrl = manifestRepositoryUrl;
-		jobs = 0;
 		showAllChanges = false;
-		fetchSubmodules = false;
 		ignoreProjects = Collections.<String>emptySet();
 		behaviors = new ArrayList<>();
 		//behaviors.add(new CurrentBranch());
@@ -672,10 +682,14 @@ public class RepoScm extends SCM implements Serializable {
 	 * @param jobs
 	 *        The number of concurrent jobs to use for the sync command. If
 	 *        this is 0 or negative the jobs parameter is not specified.
+	 * @deprecated see {@link Jobs}
      */
-	@DataBoundSetter
+	@DataBoundSetter @Deprecated
 	public void setJobs(final int jobs) {
-		this.jobs = jobs;
+		behaviors.removeIf(Jobs.class::isInstance);
+		if (jobs > 0) {
+			addBehavior(new Jobs(jobs));
+		}
 	}
 
 	/**
@@ -935,10 +949,14 @@ public class RepoScm extends SCM implements Serializable {
 	 * @param fetchSubmodules
 	 *            If this value is true, add the "--fetch-submodules" option when
 	 *            executing "repo sync".
+	 * @deprecated see {@link FetchSubmodules}
 	 */
-	@DataBoundSetter
+	@DataBoundSetter @Deprecated
 	public void setFetchSubmodules(final boolean fetchSubmodules) {
-		this.fetchSubmodules = fetchSubmodules;
+		behaviors.removeIf(FetchSubmodules.class::isInstance);
+		if (fetchSubmodules) {
+			addBehavior(new FetchSubmodules());
+		}
 	}
 
 	/**
@@ -1141,16 +1159,6 @@ public class RepoScm extends SCM implements Serializable {
 			return 3;
 		}
 
-
-
-		if (jobs > 0) {
-			commands.add("--jobs=" + jobs);
-		}
-
-
-		if (fetchSubmodules) {
-			commands.add("--fetch-submodules");
-		}
 		return launcher.launch().stdout(listener.getLogger()).pwd(workspace)
                 .cmds(commands).envs(env).join();
 	}
@@ -1321,6 +1329,8 @@ public class RepoScm extends SCM implements Serializable {
 	@Deprecated @CheckForNull private transient boolean cleanFirst;
 	@Deprecated @CheckForNull private transient boolean quiet;
 	@Deprecated @CheckForNull private transient boolean forceSync;
+	@Deprecated @CheckForNull private transient int jobs;
+	@Deprecated @CheckForNull private transient boolean fetchSubmodules;
 
 	/**
 	 * Converts old data to new behaviour format.
@@ -1385,6 +1395,12 @@ public class RepoScm extends SCM implements Serializable {
 			}
 			if (forceSync) {
 				b.add(new ForceSync());
+			}
+			if (jobs > 0) {
+				b.add(new Jobs(jobs));
+			}
+			if (fetchSubmodules) {
+				b.add(new FetchSubmodules());
 			}
 
 			b.sort(RepoScmBehaviorDescriptor.EXTENSION_COMPARATOR);

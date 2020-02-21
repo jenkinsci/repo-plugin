@@ -31,41 +31,57 @@ import hudson.plugins.repo.behaviors.RepoScmBehavior;
 import hudson.plugins.repo.behaviors.RepoScmBehaviorDescriptor;
 import hudson.plugins.repo.behaviors.TraitApplicationException;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.export.ExportedBean;
 
 import javax.annotation.Nonnull;
 import java.util.List;
 
 /**
- * Enables --force-sync option on repo sync command.
+ * The number of jobs used for sync. By default repo does not use concurrent jobs.
  */
 @ExportedBean
-public class ForceSync extends RepoScmBehavior<ForceSync> {
+public class Jobs extends RepoScmBehavior<Jobs> {
+
+    private final int jobs;
 
     /**
-     * Default databound constructor.
+     * Databound constructor.
+     * @param jobs number of threads
      */
     @DataBoundConstructor
-    public ForceSync() {
+    public Jobs(final int jobs) {
+        this.jobs = jobs;
     }
 
     @Override
     public boolean decorateSync(@Nonnull final List<String> commands,
                                 final EnvVars env,
                                 @Nonnull final TaskListener listener) throws TraitApplicationException {
-        commands.add("--force-sync");
+        if (jobs > 0) {
+            commands.add("--jobs=" + jobs);
+        }
         return true;
+    }
+
+    /**
+     * The number of jobs used for sync.
+     * @return number of jobs
+     */
+    @Exported
+    public int getJobs() {
+        return jobs;
     }
 
     /**
      * The descriptor.
      */
     @Extension(ordinal = 180)
-    public static final class DescriptorImpl extends RepoScmBehaviorDescriptor<ForceSync> {
+    public static final class DescriptorImpl extends RepoScmBehaviorDescriptor<Jobs> {
         @Nonnull
         @Override
         public String getDisplayName() {
-            return Messages.ForceSync_DescriptorImpl_DisplayName();
+            return Messages.Jobs_DescriptorImpl_DisplayName();
         }
     }
 }

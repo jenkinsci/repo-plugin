@@ -17,26 +17,11 @@
 			<f:hetero-list descriptors="${descriptor.getBehaviourDescriptors()}" items="${descriptor.getBehavioursOrDefaults(instance)}" name="behaviors"
 						   hasHeader="true" oneEach="true" honorOrder="true"/>
 		</f:entry>
-
-
-
 		<f:entry title="IgnoreChanges" help="/plugin/repo/help-ignoreChanges.html" field="ignoreProjects">
 			<f:textarea rows="3" />
 		</f:entry>
-
-		<f:entry title="Jobs" help="/plugin/repo/help-jobs.html" field="jobs">
-			<f:textbox clazz="number"/>
-		</f:entry>
-
-		<f:entry title="Fetch submodules" help="/plugin/repo/help-fetchSubmodules.html" field="fetchSubmodules">
-			<f:checkbox default="false"/>
-		</f:entry>
-
 		<f:entry title="Show all changes" help="/plugin/repo/help-showAllChanges.html" field="showAllChanges">
 			<f:checkbox/>
 		</f:entry>
-
-
-
 	</f:advanced>
 </j:jelly>

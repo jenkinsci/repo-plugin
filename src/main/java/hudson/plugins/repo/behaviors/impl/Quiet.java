@@ -31,6 +31,7 @@ import hudson.plugins.repo.behaviors.RepoScmBehavior;
 import hudson.plugins.repo.behaviors.RepoScmBehaviorDescriptor;
 import hudson.plugins.repo.behaviors.TraitApplicationException;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.export.ExportedBean;
 
 import javax.annotation.Nonnull;
 import java.util.List;
@@ -38,6 +39,7 @@ import java.util.List;
 /**
  * Add the "-q" option when executing <code>repo sync</code>.
  */
+@ExportedBean
 public class Quiet extends RepoScmBehavior<Quiet> {
 
     /**

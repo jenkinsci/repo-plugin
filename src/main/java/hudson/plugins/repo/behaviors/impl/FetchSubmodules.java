@@ -37,35 +37,35 @@ import javax.annotation.Nonnull;
 import java.util.List;
 
 /**
- * Enables --force-sync option on repo sync command.
+ * Add the "--fetch-submodules" option when executing <code>repo sync</code>.
  */
 @ExportedBean
-public class ForceSync extends RepoScmBehavior<ForceSync> {
+public class FetchSubmodules extends RepoScmBehavior<FetchSubmodules> {
 
     /**
      * Default databound constructor.
      */
     @DataBoundConstructor
-    public ForceSync() {
+    public FetchSubmodules() {
     }
 
     @Override
     public boolean decorateSync(@Nonnull final List<String> commands,
                                 final EnvVars env,
                                 @Nonnull final TaskListener listener) throws TraitApplicationException {
-        commands.add("--force-sync");
+        commands.add("--fetch-submodules");
         return true;
     }
 
     /**
      * The descriptor.
      */
-    @Extension(ordinal = 180)
-    public static final class DescriptorImpl extends RepoScmBehaviorDescriptor<ForceSync> {
+    @Extension(ordinal = 190)
+    public static final class DescriptorImpl extends RepoScmBehaviorDescriptor<FetchSubmodules> {
         @Nonnull
         @Override
         public String getDisplayName() {
-            return Messages.ForceSync_DescriptorImpl_DisplayName();
+            return Messages.FetchSubmodules_DescriptorImpl_DisplayName();
         }
     }
 }
