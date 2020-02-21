@@ -36,6 +36,7 @@ import hudson.model.StringParameterDefinition;
 import hudson.model.TaskListener;
 import hudson.plugins.repo.behaviors.RepoScmBehavior;
 import hudson.plugins.repo.behaviors.RepoScmBehaviorDescriptor;
+import hudson.plugins.repo.behaviors.impl.CleanFirst;
 import hudson.plugins.repo.behaviors.impl.CurrentBranch;
 import hudson.plugins.repo.behaviors.impl.Depth;
 import hudson.plugins.repo.behaviors.impl.DestinationDirectory;
@@ -107,7 +108,7 @@ public class RepoScm extends SCM implements Serializable {
 
 
 
-	@CheckForNull private boolean cleanFirst;
+
 	@CheckForNull private boolean quiet;
 	@CheckForNull private boolean forceSync;
 
@@ -362,10 +363,12 @@ public class RepoScm extends SCM implements Serializable {
 
 	/**
 	 * Returns the value of cleanFirst.
+	 *
+	 * @deprecated see {@link CleanFirst}
 	 */
-	@Exported
+	@Exported @Deprecated
 	public boolean isCleanFirst() {
-		return cleanFirst;
+		return behaviors.stream().anyMatch(CleanFirst.class::isInstance);
 	}
 
 	/**
@@ -535,7 +538,6 @@ public class RepoScm extends SCM implements Serializable {
 	public RepoScm(final String manifestRepositoryUrl) {
 		this.manifestRepositoryUrl = manifestRepositoryUrl;
 		jobs = 0;
-		cleanFirst = false;
 		quiet = false;
 		forceSync = false;
 		showAllChanges = false;
@@ -761,10 +763,15 @@ public class RepoScm extends SCM implements Serializable {
 	 * @param cleanFirst
 	 *        If this value is true, do "repo forall -c 'git clean -fdx'"
 	 *        before syncing.
+	 *
+	 * @deprecated see {@link CleanFirst}
      */
-	@DataBoundSetter
+	@DataBoundSetter @Deprecated
 	public void setCleanFirst(final boolean cleanFirst) {
-		this.cleanFirst = cleanFirst;
+		behaviors.removeIf(CleanFirst.class::isInstance);
+		if (cleanFirst) {
+			addBehavior(new CleanFirst());
+		}
 	}
 
 	/**
@@ -1088,10 +1095,9 @@ public class RepoScm extends SCM implements Serializable {
 	private int doSync(final Launcher launcher, @Nonnull final FilePath workspace,
 					   @Nonnull final TaskListener listener, final EnvVars env)
 		throws IOException, InterruptedException {
-		final List<String> commands = new ArrayList<String>(4);
+
 		debug.log(Level.FINE, "Syncing out code in: " + workspace.getName());
 		final String executable = getDescriptor().getExecutable();
-
 		boolean preSyncSuccessful = true;
 		for (RepoScmBehavior<?> behavior : behaviors) {
 			if (!behavior.preSync(executable, launcher, workspace, listener, env)) {
@@ -1101,21 +1107,7 @@ public class RepoScm extends SCM implements Serializable {
 		if (!preSyncSuccessful) {
 			return 2;
 		}
-
-
-		if (cleanFirst) {
-			commands.add(executable);
-			commands.add("forall");
-			commands.add("-c");
-			commands.add("git clean -fdx");
-			int cleanCode = launcher.launch().stdout(listener.getLogger())
-				.stderr(listener.getLogger()).pwd(workspace).cmds(commands).envs(env).join();
-
-			if (cleanCode != 0) {
-				debug.log(Level.WARNING, "Failed to clean first.");
-			}
-			commands.clear();
-		}
+		final List<String> commands = new ArrayList<String>(4);
 		commands.add(executable);
 
 		commands.add("sync");
@@ -1302,6 +1294,7 @@ public class RepoScm extends SCM implements Serializable {
 	@Deprecated @CheckForNull private transient String localManifest;
 	@Deprecated @CheckForNull private transient String repoBranch;
 	@Deprecated @CheckForNull private transient boolean resetFirst;
+	@Deprecated @CheckForNull private transient boolean cleanFirst;
 
 	/**
 	 * Converts old data to new behaviour format.
@@ -1357,6 +1350,9 @@ public class RepoScm extends SCM implements Serializable {
 			}
 			if (resetFirst) {
 				b.add(new ResetFirst());
+			}
+			if (cleanFirst) {
+				b.add(new CleanFirst());
 			}
 
 			b.sort(RepoScmBehaviorDescriptor.EXTENSION_COMPARATOR);
