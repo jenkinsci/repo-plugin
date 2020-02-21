@@ -50,6 +50,7 @@ import hudson.plugins.repo.behaviors.impl.ManifestSubmodules;
 import hudson.plugins.repo.behaviors.impl.MirrorDir;
 import hudson.plugins.repo.behaviors.impl.NoCloneBundle;
 import hudson.plugins.repo.behaviors.impl.NoTags;
+import hudson.plugins.repo.behaviors.impl.Quiet;
 import hudson.plugins.repo.behaviors.impl.RepoBranch;
 import hudson.plugins.repo.behaviors.impl.RepoUrl;
 import hudson.plugins.repo.behaviors.impl.ResetFirst;
@@ -110,7 +111,7 @@ public class RepoScm extends SCM implements Serializable {
 
 
 
-	@CheckForNull private boolean quiet;
+
 	@CheckForNull private boolean forceSync;
 
 	@CheckForNull private boolean showAllChanges;
@@ -384,10 +385,12 @@ public class RepoScm extends SCM implements Serializable {
 
 	/**
 	 * Returns the value of quiet.
+	 *
+	 * @deprecated see {@link Quiet}
 	 */
-	@Exported
+	@Exported @Deprecated
 	public boolean isQuiet() {
-		return quiet;
+		return behaviors.stream().anyMatch(Quiet.class::isInstance);
 	}
 	/**
 	 * Returns the value of forceSync.
@@ -541,7 +544,6 @@ public class RepoScm extends SCM implements Serializable {
 	public RepoScm(final String manifestRepositoryUrl) {
 		this.manifestRepositoryUrl = manifestRepositoryUrl;
 		jobs = 0;
-		quiet = false;
 		forceSync = false;
 		showAllChanges = false;
 		fetchSubmodules = false;
@@ -785,10 +787,14 @@ public class RepoScm extends SCM implements Serializable {
 	 * @param quiet
 	 * *      If this value is true, add the "-q" option when executing
 	 *        "repo sync".
+	 * @deprecated see {@link Quiet}
      */
-	@DataBoundSetter
+	@DataBoundSetter @Deprecated
 	public void setQuiet(final boolean quiet) {
-		this.quiet = quiet;
+		behaviors.removeIf(Quiet.class::isInstance);
+		if (quiet) {
+			addBehavior(new Quiet());
+		}
 	}
 
 	/**
@@ -1118,9 +1124,17 @@ public class RepoScm extends SCM implements Serializable {
 		commands.add("sync");
 		commands.add("-d");
 
-		if (isQuiet()) {
-			commands.add("-q");
+		boolean decorationSuccess = true;
+		for (RepoScmBehavior<?> behavior : behaviors) {
+			if (!behavior.decorateSync(commands, env, listener)) {
+				decorationSuccess = false;
+			}
 		}
+		if (!decorationSuccess) {
+			return 3;
+		}
+
+
 		if (isForceSync()) {
 			commands.add("--force-sync");
 		}
@@ -1300,6 +1314,7 @@ public class RepoScm extends SCM implements Serializable {
 	@Deprecated @CheckForNull private transient String repoBranch;
 	@Deprecated @CheckForNull private transient boolean resetFirst;
 	@Deprecated @CheckForNull private transient boolean cleanFirst;
+	@Deprecated @CheckForNull private transient boolean quiet;
 
 	/**
 	 * Converts old data to new behaviour format.
@@ -1358,6 +1373,9 @@ public class RepoScm extends SCM implements Serializable {
 			}
 			if (cleanFirst) {
 				b.add(new CleanFirst());
+			}
+			if (quiet) {
+				b.add(new Quiet());
 			}
 
 			b.sort(RepoScmBehaviorDescriptor.EXTENSION_COMPARATOR);
