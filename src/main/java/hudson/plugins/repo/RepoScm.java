@@ -50,6 +50,7 @@ import hudson.plugins.repo.behaviors.impl.NoCloneBundle;
 import hudson.plugins.repo.behaviors.impl.NoTags;
 import hudson.plugins.repo.behaviors.impl.RepoBranch;
 import hudson.plugins.repo.behaviors.impl.RepoUrl;
+import hudson.plugins.repo.behaviors.impl.ResetFirst;
 import hudson.plugins.repo.behaviors.impl.Trace;
 import hudson.scm.ChangeLogParser;
 import hudson.scm.PollingResult;
@@ -94,8 +95,7 @@ import java.util.logging.Logger;
 @ExportedBean
 public class RepoScm extends SCM implements Serializable {
 
-	private static Logger debug = Logger
-			.getLogger("hudson.plugins.repo.RepoScm");
+	private static Logger debug = Logger.getLogger(RepoScm.class.getName());
 
 	private final String manifestRepositoryUrl;
 
@@ -106,7 +106,7 @@ public class RepoScm extends SCM implements Serializable {
 
 
 
-	@CheckForNull private boolean resetFirst;
+
 	@CheckForNull private boolean cleanFirst;
 	@CheckForNull private boolean quiet;
 	@CheckForNull private boolean forceSync;
@@ -352,10 +352,12 @@ public class RepoScm extends SCM implements Serializable {
 	}
 	/**
 	 * Returns the value of resetFirst.
+	 *
+	 * @deprecated see {@link hudson.plugins.repo.behaviors.impl.ResetFirst}
 	 */
-	@Exported
+	@Exported @Deprecated
 	public boolean isResetFirst() {
-		return resetFirst;
+		return behaviors.stream().anyMatch(ResetFirst.class::isInstance);
 	}
 
 	/**
@@ -533,7 +535,6 @@ public class RepoScm extends SCM implements Serializable {
 	public RepoScm(final String manifestRepositoryUrl) {
 		this.manifestRepositoryUrl = manifestRepositoryUrl;
 		jobs = 0;
-		resetFirst = false;
 		cleanFirst = false;
 		quiet = false;
 		forceSync = false;
@@ -744,10 +745,14 @@ public class RepoScm extends SCM implements Serializable {
 	 * @param resetFirst
 	 *        If this value is true, do "repo forall -c 'git reset --hard'"
 	 *        before syncing.
+	 * @deprecated see {@link ResetFirst}.
      */
-	@DataBoundSetter
+	@DataBoundSetter @Deprecated
 	public void setResetFirst(final boolean resetFirst) {
-		this.resetFirst = resetFirst;
+		behaviors.removeIf(ResetFirst.class::isInstance);
+		if (resetFirst) {
+			addBehavior(new ResetFirst());
+		}
 	}
 
 	/**
@@ -1085,22 +1090,21 @@ public class RepoScm extends SCM implements Serializable {
 		throws IOException, InterruptedException {
 		final List<String> commands = new ArrayList<String>(4);
 		debug.log(Level.FINE, "Syncing out code in: " + workspace.getName());
-		commands.clear();
-		if (resetFirst) {
-			commands.add(getDescriptor().getExecutable());
-			commands.add("forall");
-			commands.add("-c");
-			commands.add("git reset --hard");
-			int resetCode = launcher.launch().stdout(listener.getLogger())
-				.stderr(listener.getLogger()).pwd(workspace).cmds(commands).envs(env).join();
+		final String executable = getDescriptor().getExecutable();
 
-			if (resetCode != 0) {
-				debug.log(Level.WARNING, "Failed to reset first.");
+		boolean preSyncSuccessful = true;
+		for (RepoScmBehavior<?> behavior : behaviors) {
+			if (!behavior.preSync(executable, launcher, workspace, listener, env)) {
+				preSyncSuccessful = false;
 			}
-			commands.clear();
 		}
+		if (!preSyncSuccessful) {
+			return 2;
+		}
+
+
 		if (cleanFirst) {
-			commands.add(getDescriptor().getExecutable());
+			commands.add(executable);
 			commands.add("forall");
 			commands.add("-c");
 			commands.add("git clean -fdx");
@@ -1112,7 +1116,7 @@ public class RepoScm extends SCM implements Serializable {
 			}
 			commands.clear();
 		}
-		commands.add(getDescriptor().getExecutable());
+		commands.add(executable);
 
 		commands.add("sync");
 		commands.add("-d");
@@ -1297,6 +1301,7 @@ public class RepoScm extends SCM implements Serializable {
 	@Deprecated @CheckForNull private transient boolean manifestSubmodules;
 	@Deprecated @CheckForNull private transient String localManifest;
 	@Deprecated @CheckForNull private transient String repoBranch;
+	@Deprecated @CheckForNull private transient boolean resetFirst;
 
 	/**
 	 * Converts old data to new behaviour format.
@@ -1349,6 +1354,9 @@ public class RepoScm extends SCM implements Serializable {
 			}
 			if (StringUtils.isNotEmpty(repoBranch)) {
 				b.add(new RepoBranch(repoBranch));
+			}
+			if (resetFirst) {
+				b.add(new ResetFirst());
 			}
 
 			b.sort(RepoScmBehaviorDescriptor.EXTENSION_COMPARATOR);

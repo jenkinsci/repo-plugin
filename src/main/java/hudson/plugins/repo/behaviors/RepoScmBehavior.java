@@ -26,6 +26,7 @@ package hudson.plugins.repo.behaviors;
 
 import hudson.EnvVars;
 import hudson.FilePath;
+import hudson.Launcher;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.TaskListener;
 
@@ -85,6 +86,27 @@ public abstract class RepoScmBehavior<T extends RepoScmBehavior<T>> extends Abst
     public boolean postInit(final FilePath workspace,
                             final EnvVars env,
                             @Nonnull final TaskListener listener) throws TraitApplicationException {
+        return true;
+    }
+
+    /**
+     * Called just before <code>repo sync</code>.
+     *
+     * @param executable the path/name of the repo executable
+     * @param launcher a launcher to launch the executable with
+     * @param workspace the current workspace
+     * @param listener the ways of logging to the build
+     * @param env the current environment
+     * @return true if continue with the call false if abort
+     *
+     * @throws TraitApplicationException if something happened that needs the user's attention
+     *      and aborts all future operations.
+     */
+    public boolean preSync(@Nonnull final String executable,
+                           @Nonnull final Launcher launcher,
+                           @Nonnull final FilePath workspace,
+                           @Nonnull final TaskListener listener,
+                           final EnvVars env) throws TraitApplicationException {
         return true;
     }
 }

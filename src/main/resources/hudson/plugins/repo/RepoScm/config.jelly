@@ -32,9 +32,7 @@
 			<f:checkbox default="false"/>
 		</f:entry>
 
-		<f:entry title="Reset first" help="/plugin/repo/help-resetFirst.html" field="resetFirst">
-			<f:checkbox/>
-		</f:entry>
+
                 <f:entry title="Clean first" help="/plugin/repo/help-cleanFirst.html">
                         <f:checkbox name="repo.cleanFirst" checked="${scm.cleanFirst}" />
                 </f:entry>

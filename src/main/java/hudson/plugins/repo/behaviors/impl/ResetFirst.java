@@ -26,66 +26,69 @@ package hudson.plugins.repo.behaviors.impl;
 
 import hudson.EnvVars;
 import hudson.Extension;
+import hudson.FilePath;
+import hudson.Launcher;
 import hudson.model.TaskListener;
+import hudson.plugins.repo.RepoScm;
 import hudson.plugins.repo.behaviors.RepoScmBehavior;
 import hudson.plugins.repo.behaviors.RepoScmBehaviorDescriptor;
 import hudson.plugins.repo.behaviors.TraitApplicationException;
-import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.export.ExportedBean;
 
 import javax.annotation.Nonnull;
+import java.util.Arrays;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
- * The repo branch. By default repo is downloaded from the default branch.
+ * If specified, do <code>repo forall -c 'git reset --hard'</code>
+ * before syncing.
  */
 @ExportedBean
-public class RepoBranch extends RepoScmBehavior<RepoBranch> {
-
-    @Nonnull private final String repoBranch;
+public class ResetFirst extends RepoScmBehavior<ResetFirst> {
 
     /**
-     * Databound constructor.
-     *
-     * @param repoBranch the repo branch
+     * Default databound constructor.
      */
     @DataBoundConstructor
-    public RepoBranch(@Nonnull final String repoBranch) {
-        if (StringUtils.isEmpty(repoBranch)) {
-            throw new IllegalArgumentException("empty");
-        }
-        this.repoBranch = repoBranch.trim();
+    public ResetFirst() {
     }
 
     @Override
-    public boolean decorateInit(@Nonnull final List<String> commands,
-                                final EnvVars env,
-                                @Nonnull final TaskListener listener) throws TraitApplicationException {
-        commands.add("--repo-branch=" + env.expand(repoBranch));
+    public boolean preSync(@Nonnull final String executable,
+                           @Nonnull final Launcher launcher,
+                           @Nonnull final FilePath workspace,
+                           @Nonnull final TaskListener listener,
+                           final EnvVars env) throws TraitApplicationException {
+        List<String> commands = Arrays.asList(
+                executable,
+                "forall",
+                "-c",
+                "git reset --hard"
+        );
+        try {
+            int resetCode = launcher.launch().stdout(listener.getLogger())
+                    .stderr(listener.getLogger()).pwd(workspace).cmds(commands).envs(env).join();
+            if (resetCode != 0) {
+                Logger.getLogger(RepoScm.class.getName()).log(Level.WARNING, "Failed to reset first.");
+            }
+        } catch (Exception e) {
+            throw new TraitApplicationException(e, this);
+        }
         return true;
     }
 
     /**
-     * The repo branch.
-     *
-     * @return The repo branch.
+     * the descriptor.
      */
-    @Nonnull @Exported
-    public String getRepoBranch() {
-        return repoBranch;
-    }
-
-    /**
-     * The descriptor.
-     */
-    @Extension(ordinal = 65)
-    public static final class DescriptorImpl extends RepoScmBehaviorDescriptor<RepoBranch> {
+    @Extension(ordinal = 150)
+    public static final class DescriptorImpl extends RepoScmBehaviorDescriptor<ResetFirst> {
         @Nonnull
         @Override
         public String getDisplayName() {
-            return Messages.RepoBranch_DescriptorImpl_DisplayName();
+            return Messages.ResetFirst_DescriptorImpl_DisplayName();
         }
     }
 }
