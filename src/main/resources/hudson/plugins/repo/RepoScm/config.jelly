@@ -32,11 +32,6 @@
 			<f:checkbox default="false"/>
 		</f:entry>
 
-
-		<f:entry title="Force Sync" help="/plugin/repo/help-forceSync.html" field="forceSync">
-			<f:checkbox/>
-		</f:entry>
-
 		<f:entry title="Show all changes" help="/plugin/repo/help-showAllChanges.html" field="showAllChanges">
 			<f:checkbox/>
 		</f:entry>

@@ -41,6 +41,7 @@ import hudson.plugins.repo.behaviors.impl.CleanFirst;
 import hudson.plugins.repo.behaviors.impl.CurrentBranch;
 import hudson.plugins.repo.behaviors.impl.Depth;
 import hudson.plugins.repo.behaviors.impl.DestinationDirectory;
+import hudson.plugins.repo.behaviors.impl.ForceSync;
 import hudson.plugins.repo.behaviors.impl.LocalManifest;
 import hudson.plugins.repo.behaviors.impl.ManifestBranch;
 import hudson.plugins.repo.behaviors.impl.ManifestFile;
@@ -112,7 +113,7 @@ public class RepoScm extends SCM implements Serializable {
 
 
 
-	@CheckForNull private boolean forceSync;
+
 
 	@CheckForNull private boolean showAllChanges;
 
@@ -394,10 +395,12 @@ public class RepoScm extends SCM implements Serializable {
 	}
 	/**
 	 * Returns the value of forceSync.
+	 *
+	 * @deprecated see {@link ForceSync}
 	 */
-	@Exported
+	@Exported @Deprecated
 	public boolean isForceSync() {
-		return forceSync;
+		return behaviors.stream().anyMatch(ForceSync.class::isInstance);
 	}
 
 	/**
@@ -544,7 +547,6 @@ public class RepoScm extends SCM implements Serializable {
 	public RepoScm(final String manifestRepositoryUrl) {
 		this.manifestRepositoryUrl = manifestRepositoryUrl;
 		jobs = 0;
-		forceSync = false;
 		showAllChanges = false;
 		fetchSubmodules = false;
 		ignoreProjects = Collections.<String>emptySet();
@@ -880,14 +882,19 @@ public class RepoScm extends SCM implements Serializable {
 	}
 
 	/**
-	* Enables --force-sync option on repo sync command.
-	 * @param forceSync
-	 *        If this value is true, add the "--force-sync" option when
-	*        executing "repo sync".
-	*/
+	 * Enables --force-sync option on repo sync command.
+	 *
+	 * @param forceSync If this value is true, add the "--force-sync" option when
+	 *                  executing "repo sync".
+	 * @deprecated see {@link ForceSync}
+	 */
 	@DataBoundSetter
+	@Deprecated
 	public void setForceSync(final boolean forceSync) {
-		this.forceSync = forceSync;
+		behaviors.removeIf(ForceSync.class::isInstance);
+		if (forceSync) {
+			addBehavior(new ForceSync());
+		}
 	}
 
 	/**
@@ -1135,9 +1142,7 @@ public class RepoScm extends SCM implements Serializable {
 		}
 
 
-		if (isForceSync()) {
-			commands.add("--force-sync");
-		}
+
 		if (jobs > 0) {
 			commands.add("--jobs=" + jobs);
 		}
@@ -1315,6 +1320,7 @@ public class RepoScm extends SCM implements Serializable {
 	@Deprecated @CheckForNull private transient boolean resetFirst;
 	@Deprecated @CheckForNull private transient boolean cleanFirst;
 	@Deprecated @CheckForNull private transient boolean quiet;
+	@Deprecated @CheckForNull private transient boolean forceSync;
 
 	/**
 	 * Converts old data to new behaviour format.
@@ -1376,6 +1382,9 @@ public class RepoScm extends SCM implements Serializable {
 			}
 			if (quiet) {
 				b.add(new Quiet());
+			}
+			if (forceSync) {
+				b.add(new ForceSync());
 			}
 
 			b.sort(RepoScmBehaviorDescriptor.EXTENSION_COMPARATOR);
