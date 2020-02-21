@@ -48,6 +48,7 @@ import hudson.plugins.repo.behaviors.impl.ManifestSubmodules;
 import hudson.plugins.repo.behaviors.impl.MirrorDir;
 import hudson.plugins.repo.behaviors.impl.NoCloneBundle;
 import hudson.plugins.repo.behaviors.impl.NoTags;
+import hudson.plugins.repo.behaviors.impl.RepoBranch;
 import hudson.plugins.repo.behaviors.impl.RepoUrl;
 import hudson.plugins.repo.behaviors.impl.Trace;
 import hudson.scm.ChangeLogParser;
@@ -99,7 +100,7 @@ public class RepoScm extends SCM implements Serializable {
 	private final String manifestRepositoryUrl;
 
 	// Advanced Fields:
-	@CheckForNull private String repoBranch;
+
 	@CheckForNull private int jobs;
 
 
@@ -248,10 +249,17 @@ public class RepoScm extends SCM implements Serializable {
 	/**
 	 * Returns the repo branch. by default, this is null and
 	 * repo is used from the default branch
+	 *
+	 * @deprecated see {@link RepoBranch}.
 	 */
-	@Exported
+	@Exported @Deprecated
 	public String getRepoBranch() {
-		return repoBranch;
+		for (RepoScmBehavior<?> behavior : behaviors) {
+			if (behavior instanceof RepoBranch) {
+				return ((RepoBranch) behavior).getRepoBranch();
+			}
+		}
+		return null;
 	}
 
 	/**
@@ -524,7 +532,6 @@ public class RepoScm extends SCM implements Serializable {
 	@DataBoundConstructor //TODO
 	public RepoScm(final String manifestRepositoryUrl) {
 		this.manifestRepositoryUrl = manifestRepositoryUrl;
-		repoBranch = null;
 		jobs = 0;
 		resetFirst = false;
 		cleanFirst = false;
@@ -837,10 +844,16 @@ public class RepoScm extends SCM implements Serializable {
 	 * @param repoBranch
 	 *        If not null then use this as branch for repo itself
 	 *        instead of the default.
+	 *
+	 * @deprecated see {@link RepoBranch}
 	 */
-	@DataBoundSetter
+	@DataBoundSetter @Deprecated
 	public void setRepoBranch(@CheckForNull final String repoBranch) {
-		this.repoBranch = Util.fixEmptyAndTrim(repoBranch);
+		behaviors.removeIf(RepoBranch.class::isInstance);
+		String rb = Util.fixEmptyAndTrim(repoBranch);
+		if (rb != null) {
+			addBehavior(new RepoBranch(rb));
+		}
 	}
 
 	/**
@@ -1147,10 +1160,6 @@ public class RepoScm extends SCM implements Serializable {
 			return false;
 		}
 
-		if (repoBranch != null) {
-			commands.add("--repo-branch=" + env.expand(repoBranch));
-		}
-
 		int returnCode =
 				launcher.launch().stdout(listener.getLogger()).pwd(workspace)
 						.cmds(commands).envs(env).join();
@@ -1287,6 +1296,7 @@ public class RepoScm extends SCM implements Serializable {
 	@Deprecated @CheckForNull private transient boolean noTags;
 	@Deprecated @CheckForNull private transient boolean manifestSubmodules;
 	@Deprecated @CheckForNull private transient String localManifest;
+	@Deprecated @CheckForNull private transient String repoBranch;
 
 	/**
 	 * Converts old data to new behaviour format.
@@ -1336,6 +1346,9 @@ public class RepoScm extends SCM implements Serializable {
 			}
 			if (StringUtils.isNotEmpty(localManifest)) {
 				b.add(new LocalManifest(localManifest));
+			}
+			if (StringUtils.isNotEmpty(repoBranch)) {
+				b.add(new RepoBranch(repoBranch));
 			}
 
 			b.sort(RepoScmBehaviorDescriptor.EXTENSION_COMPARATOR);

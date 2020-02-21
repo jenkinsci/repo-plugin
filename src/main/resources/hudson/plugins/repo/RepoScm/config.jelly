@@ -18,9 +18,7 @@
 						   hasHeader="true" oneEach="true" honorOrder="true"/>
 		</f:entry>
 
-		<f:entry title="Repo Branch" help="/plugin/repo/help-repoBranch.html" field="repoBranch">
-			<f:textbox/>
-		</f:entry>
+
 
 		<f:entry title="IgnoreChanges" help="/plugin/repo/help-ignoreChanges.html" field="ignoreProjects">
 			<f:textarea rows="3" />
