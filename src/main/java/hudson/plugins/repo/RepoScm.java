@@ -99,6 +99,7 @@ public class RepoScm extends SCM implements Serializable {
 	private final String manifestRepositoryUrl;
 
 	// Advanced Fields:
+	@CheckForNull private String repoBranch;
 	@CheckForNull private int jobs;
 
 
@@ -242,6 +243,15 @@ public class RepoScm extends SCM implements Serializable {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * Returns the repo branch. by default, this is null and
+	 * repo is used from the default branch
+	 */
+	@Exported
+	public String getRepoBranch() {
+		return repoBranch;
 	}
 
 	/**
@@ -460,7 +470,7 @@ public class RepoScm extends SCM implements Serializable {
 	 * @param destinationDir        If not null then the source is synced to the destinationDir
 	 *                              subdirectory of the workspace.
 	 * @param repoUrl               If not null then use this url as repo base,
-	 *                              instead of the default
+	 *                              instead of the default.
 	 * @param currentBranch         If this value is true, add the "-c" option when executing
 	 *                              "repo sync".
 	 * @param resetFirst            If this value is true, do "repo forall -c 'git reset --hard'"
@@ -514,6 +524,7 @@ public class RepoScm extends SCM implements Serializable {
 	@DataBoundConstructor //TODO
 	public RepoScm(final String manifestRepositoryUrl) {
 		this.manifestRepositoryUrl = manifestRepositoryUrl;
+		repoBranch = null;
 		jobs = 0;
 		resetFirst = false;
 		cleanFirst = false;
@@ -821,6 +832,18 @@ public class RepoScm extends SCM implements Serializable {
 	}
 
 	/**
+	 * Set the repo branch.
+	 *
+	 * @param repoBranch
+	 *        If not null then use this as branch for repo itself
+	 *        instead of the default.
+	 */
+	@DataBoundSetter
+	public void setRepoBranch(@CheckForNull final String repoBranch) {
+		this.repoBranch = Util.fixEmptyAndTrim(repoBranch);
+	}
+
+	/**
 	* Enables --force-sync option on repo sync command.
 	 * @param forceSync
 	 *        If this value is true, add the "--force-sync" option when
@@ -1122,6 +1145,10 @@ public class RepoScm extends SCM implements Serializable {
 		}
 		if (!decorationSuccess) {
 			return false;
+		}
+
+		if (repoBranch != null) {
+			commands.add("--repo-branch=" + env.expand(repoBranch));
 		}
 
 		int returnCode =
