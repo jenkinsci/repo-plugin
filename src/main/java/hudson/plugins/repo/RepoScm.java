@@ -2,6 +2,7 @@
  * The MIT License
  *
  * Copyright (c) 2010, Brad Larson
+ * Copyright (c) 2020, CloudBees Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -133,8 +134,10 @@ public class RepoScm extends SCM implements Serializable {
 	/**
 	 * Returns the manifest branch name. By default, this is null and repo
 	 * defaults to "master".
+	 *
+	 * @deprecated see {@link ManifestBranch}
 	 */
-	@Exported
+	@Exported @Deprecated
 	public String getManifestBranch() {
 		for (RepoScmBehavior<?> behavior : behaviors) {
 			if (behavior instanceof ManifestBranch) {
@@ -308,7 +311,7 @@ public class RepoScm extends SCM implements Serializable {
 	 *
 	 * @deprecated see {@link LocalManifest}
 	 */
-	@Exported @Deprecated
+	@CheckForNull @Exported @Deprecated
 	public String getLocalManifest() {
 		for (RepoScmBehavior<?> behavior : behaviors) {
 			if (behavior instanceof LocalManifest) {
@@ -611,8 +614,10 @@ public class RepoScm extends SCM implements Serializable {
 	 *        The group name for the projects that need to be fetched.
 	 *        Typically, this is null and all projects tagged 'default' will
 	 *        be fetched.
+	 *
+	 * @deprecated see {@link ManifestGroup}
      */
-	@DataBoundSetter
+	@DataBoundSetter @Deprecated
 	public void setManifestGroup(@CheckForNull final String manifestGroup) {
 		behaviors.removeIf(ManifestGroup.class::isInstance);
 		String mg = Util.fixEmptyAndTrim(manifestGroup);
