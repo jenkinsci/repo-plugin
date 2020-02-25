@@ -43,6 +43,7 @@ import hudson.plugins.repo.behaviors.impl.Depth;
 import hudson.plugins.repo.behaviors.impl.DestinationDirectory;
 import hudson.plugins.repo.behaviors.impl.FetchSubmodules;
 import hudson.plugins.repo.behaviors.impl.ForceSync;
+import hudson.plugins.repo.behaviors.impl.IgnoreChanges;
 import hudson.plugins.repo.behaviors.impl.Jobs;
 import hudson.plugins.repo.behaviors.impl.LocalManifest;
 import hudson.plugins.repo.behaviors.impl.ManifestBranch;
@@ -84,9 +85,6 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -121,7 +119,7 @@ public class RepoScm extends SCM implements Serializable {
 
 
 
-	@CheckForNull private Set<String> ignoreProjects;
+
 	@CheckForNull private EnvVars extraEnvVars;
 
 
@@ -349,11 +347,18 @@ public class RepoScm extends SCM implements Serializable {
 	}
 
 	/**
-	 * returns list of ignore projects.
+	 * Returns list of ignore projects.
+	 *
+	 * @deprecated see {@link IgnoreChanges}
 	 */
-	@Exported
+	@Exported @Deprecated
 	public String getIgnoreProjects() {
-		return StringUtils.join(ignoreProjects, '\n');
+		for (RepoScmBehavior<?> behavior : behaviors) {
+			if (behavior instanceof IgnoreChanges) {
+				return ((IgnoreChanges) behavior).getIgnoreProjects();
+			}
+		}
+		return "";
 	}
 
 	/**
@@ -545,7 +550,7 @@ public class RepoScm extends SCM implements Serializable {
 		setTrace(trace);
 		setShowAllChanges(showAllChanges);
 		setRepoUrl(repoUrl);
-		ignoreProjects = Collections.<String>emptySet();
+		setIgnoreProjects("");
 
 	}
 
@@ -559,7 +564,7 @@ public class RepoScm extends SCM implements Serializable {
 	public RepoScm(final String manifestRepositoryUrl) {
 		this.manifestRepositoryUrl = manifestRepositoryUrl;
 		showAllChanges = false;
-		ignoreProjects = Collections.<String>emptySet();
+
 		behaviors = new ArrayList<>();
 		//behaviors.add(new CurrentBranch());
 	}
@@ -965,15 +970,14 @@ public class RepoScm extends SCM implements Serializable {
 	 * to serverpath i.e. "name" section of the manifest.
 	 * @param ignoreProjects
 	 *            String representing project names separated by " ".
+	 * @deprecated see {@link IgnoreChanges}
 	 */
-	@DataBoundSetter
+	@DataBoundSetter @Deprecated
 	public final void setIgnoreProjects(final String ignoreProjects) {
-		if (ignoreProjects == null) {
-			this.ignoreProjects = Collections.<String>emptySet();
-			return;
+		behaviors.removeIf(IgnoreChanges.class::isInstance);
+		if (StringUtils.isNotEmpty(ignoreProjects)) {
+			addBehavior(new IgnoreChanges(ignoreProjects));
 		}
-		this.ignoreProjects = new LinkedHashSet<String>(
-				Arrays.asList(ignoreProjects.split("\\s+")));
 	}
 
 	/**
@@ -1001,22 +1005,16 @@ public class RepoScm extends SCM implements Serializable {
 
 	private boolean shouldIgnoreChanges(final RevisionState current, final RevisionState baseline) {
 		List<ProjectState>  changedProjects = current.whatChanged(baseline);
-		if ((changedProjects == null) || (ignoreProjects == null)) {
-			return false;
-		}
-		if (ignoreProjects.isEmpty()) {
+		if (changedProjects == null) {
 			return false;
 		}
 
-
-		// Check for every changed item if it is not contained in the
-		// ignored setting .. project must be rebuilt
-		for (ProjectState changed : changedProjects) {
-			if (!ignoreProjects.contains(changed.getServerPath())) {
-				return false;
+		for (RepoScmBehavior<?> behavior : behaviors) {
+			if (behavior.shouldIgnoreChanges(changedProjects, current, baseline)) {
+				return true;
 			}
 		}
-		return true;
+		return false;
 	}
 
 	@Override
@@ -1331,6 +1329,7 @@ public class RepoScm extends SCM implements Serializable {
 	@Deprecated @CheckForNull private transient boolean forceSync;
 	@Deprecated @CheckForNull private transient int jobs;
 	@Deprecated @CheckForNull private transient boolean fetchSubmodules;
+	@Deprecated @CheckForNull private transient Set<String> ignoreProjects;
 
 	/**
 	 * Converts old data to new behaviour format.
@@ -1401,6 +1400,9 @@ public class RepoScm extends SCM implements Serializable {
 			}
 			if (fetchSubmodules) {
 				b.add(new FetchSubmodules());
+			}
+			if (ignoreProjects != null && !ignoreProjects.isEmpty()) {
+				b.add(new IgnoreChanges(ignoreProjects));
 			}
 
 			b.sort(RepoScmBehaviorDescriptor.EXTENSION_COMPARATOR);

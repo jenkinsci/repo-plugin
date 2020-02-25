@@ -29,6 +29,8 @@ import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.TaskListener;
+import hudson.plugins.repo.ProjectState;
+import hudson.plugins.repo.RevisionState;
 
 import javax.annotation.Nonnull;
 import java.util.List;
@@ -108,5 +110,21 @@ public abstract class RepoScmBehavior<T extends RepoScmBehavior<T>> extends Abst
                            @Nonnull final TaskListener listener,
                            final EnvVars env) throws TraitApplicationException {
         return true;
+    }
+
+    /**
+     * Called when calculating if changes are significant to warrant a rebuild.
+     *
+     * The first extension to say <code>true</code> gets it.
+     *
+     * @param changedProjects list of projects (repositories) that have changed
+     * @param current the current revision
+     * @param baseline the previous revision
+     * @return true if all changes warrants to ignore a rebuild, false otherwise (the default)
+     */
+    public boolean shouldIgnoreChanges(final List<ProjectState> changedProjects,
+                                       final RevisionState current,
+                                       final RevisionState baseline) {
+        return false;
     }
 }

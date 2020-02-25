@@ -40,6 +40,8 @@ import java.util.logging.Logger;
 import javax.annotation.Nullable;
 import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.kohsuke.accmod.Restricted;
+import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -50,7 +52,8 @@ import org.xml.sax.InputSource;
  * It is used to see what changed from build to build.
  */
 @SuppressWarnings("serial")
-class RevisionState extends SCMRevisionState implements Serializable {
+@Restricted(NoExternalUse.class)
+public class RevisionState extends SCMRevisionState implements Serializable {
 
 	private final String manifest;
 	private final Map<String, ProjectState> projects =
