@@ -101,7 +101,7 @@ class ChangeLog extends ChangeLogParser {
 	 *            The FilePath of the workspace to use when computing
 	 *            differences. This path might be on a slave machine.
 	 * @param showAllChanges
-	 *            Add --first-parent to "git log"
+	 *            Add --first-parent to "git log" if false
 	 * @throws IOException
 	 *             is thrown if we have problems writing to the changelogFile
 	 * @throws InterruptedException
@@ -281,7 +281,7 @@ class ChangeLog extends ChangeLogParser {
 	 *            The FilePath of the workspace to use when computing
 	 *            differences. This path might be on a slave machine.
 	 * @param showAllChanges
-	 *            Add --first-parent to "git log"
+	 *            Add --first-parent to "git log" if false
 	 * @throws IOException
 	 *             is thrown if we have problems writing to the changelogFile
 	 * @throws InterruptedException
