@@ -33,6 +33,7 @@ import hudson.plugins.repo.ProjectState;
 import hudson.plugins.repo.RevisionState;
 
 import javax.annotation.Nonnull;
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -40,7 +41,9 @@ import java.util.List;
  *
  * @param <T> the type
  */
-public abstract class RepoScmBehavior<T extends RepoScmBehavior<T>> extends AbstractDescribableImpl<T> {
+public abstract class RepoScmBehavior<T extends RepoScmBehavior<T>>
+        extends AbstractDescribableImpl<T>
+        implements Serializable {
 
     /**
      * Decorate the <code>repo init</code> commandline.

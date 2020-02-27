@@ -99,6 +99,7 @@ import java.util.logging.Logger;
 @ExportedBean
 public class RepoScm extends SCM implements Serializable {
 
+	private static final long serialVersionUID = 1L;
 	private static Logger debug = Logger.getLogger(RepoScm.class.getName());
 
 	private final String manifestRepositoryUrl;
