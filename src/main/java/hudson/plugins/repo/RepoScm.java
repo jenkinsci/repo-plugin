@@ -58,6 +58,7 @@ import hudson.plugins.repo.behaviors.impl.Quiet;
 import hudson.plugins.repo.behaviors.impl.RepoBranch;
 import hudson.plugins.repo.behaviors.impl.RepoUrl;
 import hudson.plugins.repo.behaviors.impl.ResetFirst;
+import hudson.plugins.repo.behaviors.impl.ShowAllChanges;
 import hudson.plugins.repo.behaviors.impl.Trace;
 import hudson.scm.ChangeLogParser;
 import hudson.scm.PollingResult;
@@ -116,7 +117,7 @@ public class RepoScm extends SCM implements Serializable {
 
 
 
-	@CheckForNull private boolean showAllChanges;
+
 
 
 
@@ -396,7 +397,7 @@ public class RepoScm extends SCM implements Serializable {
 	 */
 	@Exported
 	public boolean isShowAllChanges() {
-		return showAllChanges;
+		return behaviors.stream().anyMatch(ShowAllChanges.class::isInstance);
 	}
 
 	/**
@@ -564,7 +565,6 @@ public class RepoScm extends SCM implements Serializable {
 	@DataBoundConstructor //TODO
 	public RepoScm(final String manifestRepositoryUrl) {
 		this.manifestRepositoryUrl = manifestRepositoryUrl;
-		showAllChanges = false;
 
 		behaviors = new ArrayList<>();
 		//behaviors.add(new CurrentBranch());
@@ -840,12 +840,16 @@ public class RepoScm extends SCM implements Serializable {
 	 * Set showAllChanges.
 	 *
 	 * @param showAllChanges
-	 *        If this value is true, add the "--first-parent" option to
+	 *        If this value is false, add the "--first-parent" option to
 	 *        "git log" when determining changesets.
+	 * @deprecated see {@link ShowAllChanges} and {@link #setBehaviors(List)}
      */
-	@DataBoundSetter
+	@DataBoundSetter @Deprecated
 	public void setShowAllChanges(final boolean showAllChanges) {
-		this.showAllChanges = showAllChanges;
+		behaviors.removeIf(ShowAllChanges.class::isInstance);
+		if (showAllChanges) {
+			addBehavior(new ShowAllChanges());
+		}
 	}
 
 	/**
@@ -1122,7 +1126,7 @@ public class RepoScm extends SCM implements Serializable {
 					changelogFile,
 					launcher,
 					repoDir,
-					showAllChanges);
+					isShowAllChanges());
 		}
 		build.addAction(new ManifestAction(build));
 	}
@@ -1331,6 +1335,7 @@ public class RepoScm extends SCM implements Serializable {
 	@Deprecated @CheckForNull private transient int jobs;
 	@Deprecated @CheckForNull private transient boolean fetchSubmodules;
 	@Deprecated @CheckForNull private transient Set<String> ignoreProjects;
+	@Deprecated @CheckForNull private transient boolean showAllChanges;
 
 	/**
 	 * Converts old data to new behaviour format.
@@ -1404,6 +1409,9 @@ public class RepoScm extends SCM implements Serializable {
 			}
 			if (ignoreProjects != null && !ignoreProjects.isEmpty()) {
 				b.add(new IgnoreChanges(ignoreProjects));
+			}
+			if (showAllChanges) {
+				b.add(new ShowAllChanges());
 			}
 
 			b.sort(RepoScmBehaviorDescriptor.EXTENSION_COMPARATOR);
