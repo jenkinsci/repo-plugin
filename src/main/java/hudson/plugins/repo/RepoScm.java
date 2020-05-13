@@ -102,6 +102,7 @@ public class RepoScm extends SCM implements Serializable {
 	@CheckForNull private boolean resetFirst;
 	@CheckForNull private boolean cleanFirst;
 	@CheckForNull private boolean quiet;
+	@CheckForNull private boolean pollBuildManifest;
 	@CheckForNull private boolean forceSync;
 	@CheckForNull private boolean trace;
 	@CheckForNull private boolean showAllChanges;
@@ -306,6 +307,13 @@ public class RepoScm extends SCM implements Serializable {
 		return quiet;
 	}
 	/**
+	 * Returns the value of pollBuildManifest.
+	 */
+	@Exported
+	public boolean isPollBuildManifest() {
+		return pollBuildManifest;
+	}
+	/**
 	 * Returns the value of forceSync.
 	 */
 	@Exported
@@ -393,6 +401,8 @@ public class RepoScm extends SCM implements Serializable {
 	 *                              before syncing.
 	 * @param quiet                 If this value is true, add the "-q" option when executing
 	 *                              "repo sync".
+	 * @param pollBuildManifest     If this value is true,
+	 *                              do "git rev-list HEAD -1 build_mainifest_file"
 	 * @param trace                 If this value is true, add the "--trace" option when
 	 *                              executing "repo init" and "repo sync".
 	 * @param showAllChanges        If this value is true, add the "--first-parent" option to
@@ -409,6 +419,7 @@ public class RepoScm extends SCM implements Serializable {
 				   final boolean currentBranch,
 				   final boolean resetFirst,
 				   final boolean quiet,
+				   final boolean pollBuildManifest,
 				   final boolean trace,
 				   final boolean showAllChanges) {
 		this(manifestRepositoryUrl);
@@ -424,6 +435,7 @@ public class RepoScm extends SCM implements Serializable {
 		setResetFirst(resetFirst);
 		setCleanFirst(false);
 		setQuiet(quiet);
+		setPollBuildManifest(pollBuildManifest);
 		setTrace(trace);
 		setShowAllChanges(showAllChanges);
 		setRepoUrl(repoUrl);
@@ -453,6 +465,7 @@ public class RepoScm extends SCM implements Serializable {
 		resetFirst = false;
 		cleanFirst = false;
 		quiet = false;
+		pollBuildManifest = false;
 		forceSync = false;
 		trace = false;
 		showAllChanges = false;
@@ -622,6 +635,17 @@ public class RepoScm extends SCM implements Serializable {
 	@DataBoundSetter
 	public void setQuiet(final boolean quiet) {
 		this.quiet = quiet;
+	}
+
+	/**
+	 * Set pollBuildManifest.
+	 *
+	 * @param pollBuildManifest
+	 *        If this value is true, do "git rev-list HEAD -1 build_mainifest_file".
+	 */
+	@DataBoundSetter
+	public void setPollBuildManifest(final boolean pollBuildManifest) {
+		this.pollBuildManifest = pollBuildManifest;
 	}
 
 	/**
@@ -1089,9 +1113,17 @@ public class RepoScm extends SCM implements Serializable {
 			throws IOException, InterruptedException {
 		final ByteArrayOutputStream output = new ByteArrayOutputStream();
 		final List<String> commands = new ArrayList<String>(6);
-		commands.add("git");
-		commands.add("rev-parse");
-		commands.add("HEAD");
+		if (pollBuildManifest && manifestFile != null) {
+			commands.add("git");
+			commands.add("rev-list");
+			commands.add("HEAD");
+			commands.add("-1");
+			commands.add(env.expand(manifestFile));
+		} else {
+			commands.add("git");
+			commands.add("rev-parse");
+			commands.add("HEAD");
+		}
 		launcher.launch().stderr(logger).stdout(output).pwd(
 				new FilePath(workspace, ".repo/manifests"))
 				.cmds(commands).envs(env).join();

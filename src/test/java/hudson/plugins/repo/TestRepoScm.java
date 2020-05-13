@@ -58,6 +58,13 @@ public class TestRepoScm extends TestCase {
 		assertEquals(true, scm.isResetFirst());
 	}
 
+	public void testPollBuildManifest() {
+		RepoScm scm = new RepoScm("http://manifesturl");
+		assertEquals(false, scm.isPollBuildManifest());
+		scm.setPollBuildManifest(true);
+		assertEquals(true, scm.isPollBuildManifest());
+	}
+
 	public void testCleanFirst() {
 		RepoScm scm = new RepoScm("http://manifesturl");
 		assertEquals(false, scm.isCleanFirst());
