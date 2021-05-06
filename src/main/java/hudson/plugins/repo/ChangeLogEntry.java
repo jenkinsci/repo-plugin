@@ -29,6 +29,7 @@ import hudson.scm.EditType;
 import hudson.scm.ChangeLogSet.AffectedFile;
 
 import java.util.AbstractList;
+import java.util.Collections;
 import java.util.Collection;
 import java.util.List;
 
@@ -252,7 +253,20 @@ public class ChangeLogEntry extends ChangeLogSet.Entry {
 		if (authorName == null) {
 			return User.getUnknown();
 		}
-		return User.get(authorEmail);
+
+		// get user using the full email address
+		User user = User.get(authorEmail, false, Collections.emptyMap());
+		if (user == null) {
+			// get user using the account name in the email address
+			String[] emailParts = authorEmail.split("@");
+			if (emailParts.length > 0) {
+				user = User.get(emailParts[0], true, Collections.emptyMap());
+			} else {
+				user = User.getUnknown();
+			}
+		}
+		return user;
+
 	}
 
 	@Override
