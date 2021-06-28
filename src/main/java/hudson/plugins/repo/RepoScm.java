@@ -1003,6 +1003,18 @@ public class RepoScm extends SCM implements Serializable {
 
 		debug.log(Level.INFO, "Checking out code in: {0}", workspace.getName());
 
+		FilePath rdir = workspace.child(".repo");
+		FilePath lmdir = rdir.child("local_manifests");
+		if (rdir.exists()) {
+			// Delete the legacy local_manifest.xml in case it exists from a previous build
+			rdir.child("local_manifest.xml").delete();
+
+			if (lmdir.exists()) {
+				// Delete contents of local_manifests in case it exists from a previous build
+				lmdir.deleteContents();
+			}
+		}
+
 		commands.add(getDescriptor().getExecutable());
 		if (trace) {
 		    commands.add("--trace");
@@ -1060,27 +1072,20 @@ public class RepoScm extends SCM implements Serializable {
 		if (returnCode != 0) {
 			return false;
 		}
-		//{
-			FilePath rdir = workspace.child(".repo");
-			FilePath lmdir = rdir.child("local_manifests");
-			// Delete the legacy local_manifest.xml in case it exists from a previous build
-			rdir.child("local_manifest.xml").delete();
-			if (lmdir.exists()) {
-				lmdir.deleteContents();
-			} else {
+
+		if (localManifest != null) {
+			if (!lmdir.exists()) {
 				lmdir.mkdirs();
 			}
-			if (localManifest != null) {
-				FilePath lm = lmdir.child("local.xml");
-				String expandedLocalManifest = env.expand(localManifest);
-				if (expandedLocalManifest.startsWith("<?xml")) {
-					lm.write(expandedLocalManifest, null);
-				} else {
-					URL url = new URL(expandedLocalManifest);
-					lm.copyFrom(url);
-				}
+			FilePath lm = lmdir.child("local.xml");
+			String expandedLocalManifest = env.expand(localManifest);
+			if (expandedLocalManifest.startsWith("<?xml")) {
+				lm.write(expandedLocalManifest, null);
+			} else {
+				URL url = new URL(expandedLocalManifest);
+				lm.copyFrom(url);
 			}
-		//}
+		}
 
 		returnCode = doSync(launcher, workspace, logger, env);
 		if (returnCode != 0) {
