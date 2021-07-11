@@ -102,6 +102,7 @@ public class RepoScm extends SCM implements Serializable {
 	@CheckForNull private boolean resetFirst;
 	@CheckForNull private boolean cleanFirst;
 	@CheckForNull private boolean quiet;
+	@CheckForNull private boolean pollManifest;
 	@CheckForNull private boolean forceSync;
 	@CheckForNull private boolean trace;
 	@CheckForNull private boolean showAllChanges;
@@ -307,6 +308,13 @@ public class RepoScm extends SCM implements Serializable {
 		return quiet;
 	}
 	/**
+	 * Returns the value of pollManifest.
+	 */
+	@Exported
+	public boolean isPollManifest() {
+		return pollManifest;
+	}
+	/**
 	 * Returns the value of forceSync.
 	 */
 	@Exported
@@ -462,6 +470,7 @@ public class RepoScm extends SCM implements Serializable {
 		resetFirst = false;
 		cleanFirst = false;
 		quiet = false;
+		pollManifest = false;
 		forceSync = false;
 		trace = false;
 		showAllChanges = false;
@@ -632,6 +641,17 @@ public class RepoScm extends SCM implements Serializable {
 	@DataBoundSetter
 	public void setQuiet(final boolean quiet) {
 		this.quiet = quiet;
+	}
+
+	/**
+	 * Set pollManifest.
+	 *
+	 * @param pollManifest
+	 *        If this value is true, do "git rev-list HEAD -1 mainifest_file".
+	 */
+	@DataBoundSetter
+	public void setPollManifest(final boolean pollManifest) {
+		this.pollManifest = pollManifest;
 	}
 
 	/**
@@ -1136,9 +1156,17 @@ public class RepoScm extends SCM implements Serializable {
 			throws IOException, InterruptedException {
 		final ByteArrayOutputStream output = new ByteArrayOutputStream();
 		final List<String> commands = new ArrayList<String>(6);
-		commands.add("git");
-		commands.add("rev-parse");
-		commands.add("HEAD");
+		if (pollManifest && manifestFile != null) {
+			commands.add("git");
+			commands.add("rev-list");
+			commands.add("HEAD");
+			commands.add("-1");
+			commands.add(env.expand(manifestFile));
+		} else {
+			commands.add("git");
+			commands.add("rev-parse");
+			commands.add("HEAD");
+		}
 		launcher.launch().stderr(logger).stdout(output).pwd(
 				new FilePath(workspace, ".repo/manifests"))
 				.cmds(commands).envs(env).join();

@@ -40,7 +40,7 @@ public class TestRepoScm extends TestCase {
 		RepoScm scm = new RepoScm("http://manifesturl");
 		scm.setIgnoreProjects("");
 		assertEquals("", scm.getIgnoreProjects());
-		
+
 	}
 
 	public void testSetIgnoredProjectsKeepsOrder() {
@@ -56,6 +56,13 @@ public class TestRepoScm extends TestCase {
 		assertEquals(false, scm.isResetFirst());
 		scm.setResetFirst(true);
 		assertEquals(true, scm.isResetFirst());
+	}
+
+	public void testPollManifest() {
+		RepoScm scm = new RepoScm("http://manifesturl");
+		assertEquals(false, scm.isPollManifest());
+		scm.setPollManifest(true);
+		assertEquals(true, scm.isPollManifest());
 	}
 
 	public void testCleanFirst() {
