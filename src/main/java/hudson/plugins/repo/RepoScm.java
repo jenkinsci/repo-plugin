@@ -1111,6 +1111,31 @@ public class RepoScm extends SCM implements Serializable {
 		return true;
 	}
 
+	/**
+	 * Adds environmental variables for the builds to the given map.
+	 */
+	@Override
+	public void buildEnvironment(
+			@Nonnull final Run<?, ?> build,
+			@Nonnull final java.util.Map<String, String> env) {
+		final Job<?, ?> job = build.getParent();
+		final EnvVars jobEnv = getEnvVars(null, job);
+
+		final String expandedManifestUrl = jobEnv.expand(manifestRepositoryUrl);
+		final String expandedManifestBranch = jobEnv.expand(manifestBranch);
+		final String expandedManifestFile = jobEnv.expand(manifestFile);
+
+		final List<RevisionState> stateList = build.getActions(RevisionState.class);
+		for (RevisionState state : stateList) {
+			if (state != null
+					&& isRelevantState(state, expandedManifestUrl,
+							expandedManifestBranch, expandedManifestFile)) {
+				env.put("REPO_MANIFEST", state.getManifest());
+				break;
+			}
+		}
+	}
+
 	private String getStaticManifest(final Launcher launcher,
 			final FilePath workspace, final OutputStream logger,
 			final EnvVars env)
