@@ -47,7 +47,7 @@ public class ManifestAction implements RunAction2, Serializable, BuildBadgeActio
 	private static final long serialVersionUID = 1;
 
 	private transient Run<?, ?> run;
-	private transient RevisionState revisionState;
+	private RevisionState revisionState;
 
 	/**
 	 * Allow disambiguation of the action url when multiple {@link RevisionState} actions present.
