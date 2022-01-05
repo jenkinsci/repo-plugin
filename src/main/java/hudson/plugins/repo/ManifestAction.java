@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.export.ExportedBean;
 
 import hudson.model.BuildBadgeAction;
@@ -69,6 +70,7 @@ public class ManifestAction implements RunAction2, Serializable, BuildBadgeActio
 	 *
 	 * @param index the index, indexes less than or equal to {@code 1} will be discarded.
 	 */
+	@DataBoundSetter
 	public void setIndex(final Integer index) {
 		this.index = index == null || index <= 1 ? null : index;
 		try {
