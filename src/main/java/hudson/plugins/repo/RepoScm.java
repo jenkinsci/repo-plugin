@@ -30,16 +30,20 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -83,6 +87,17 @@ public class RepoScm extends SCM implements Serializable {
 
 	private static Logger debug = Logger
 			.getLogger("hudson.plugins.repo.RepoScm");
+
+	/**
+	 * escape hatch name.
+	 */
+	static final String ALLOW_LOCAL_CHECKOUT_PROPERTY =
+			RepoScm.class.getName() + ".ALLOW_LOCAL_CHECKOUT";
+	/**
+	 * escape hatch.
+	 */
+	//CS IGNORE VisibilityModifier FOR NEXT 1 LINES. REASON: escape hatch property.
+	static /* not final */ boolean ALLOW_LOCAL_CHECKOUT = Boolean.parseBoolean(System.getProperty(ALLOW_LOCAL_CHECKOUT_PROPERTY, "false"));
 
 	private final String manifestRepositoryUrl;
 
@@ -880,6 +895,10 @@ public class RepoScm extends SCM implements Serializable {
 			@CheckForNull final File changelogFile, @CheckForNull final SCMRevisionState baseline)
 			throws IOException, InterruptedException {
 
+		if (!ALLOW_LOCAL_CHECKOUT && !workspace.isRemote()) {
+			abortIfUrlLocal();
+		}
+
 		Job<?, ?> job = build.getParent();
 		EnvVars env = build.getEnvironment(listener);
 		env = getEnvVars(env, job);
@@ -929,6 +948,18 @@ public class RepoScm extends SCM implements Serializable {
 		int revisionStateCount = build.getActions(RevisionState.class).size();
 		manifestAction.setIndex(revisionStateCount);
 		build.addAction(manifestAction);
+	}
+
+	private void abortIfUrlLocal() throws AbortException {
+		if (StringUtils.isNotEmpty(manifestRepositoryUrl)
+				&& (manifestRepositoryUrl.toLowerCase(Locale.ENGLISH).startsWith("file://")
+				|| Files.exists(Paths.get(manifestRepositoryUrl)))) {
+			throw new AbortException("Checkout of Repo url '" + manifestRepositoryUrl
+					+ "' aborted because it references a local directory, "
+					+ "which may be insecure. "
+					+ "You can allow local checkouts anyway by setting the system property '"
+					+ ALLOW_LOCAL_CHECKOUT_PROPERTY + "' to true.");
+		}
 	}
 
 	private int doSync(final Launcher launcher, @Nonnull final FilePath workspace,
@@ -1082,6 +1113,10 @@ public class RepoScm extends SCM implements Serializable {
 			}
 		//}
 
+		if (!ALLOW_LOCAL_CHECKOUT && !workspace.isRemote()) {
+			abortIfManifestReferencesLocalUrl(launcher, workspace, logger, env);
+		}
+
 		returnCode = doSync(launcher, workspace, logger, env);
 		if (returnCode != 0) {
 			debug.log(Level.WARNING, "Sync failed. Resetting repository");
@@ -1098,6 +1133,30 @@ public class RepoScm extends SCM implements Serializable {
 			}
 		}
 		return true;
+	}
+
+	private byte[] getManifestAsBytes(final Launcher launcher,
+									  final FilePath workspace,
+									  final OutputStream logger,
+									  final EnvVars env)
+			throws IOException, InterruptedException {
+		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+		final List<String> commands = new ArrayList<>();
+		commands.add(getDescriptor().getExecutable());
+		commands.add("manifest");
+		launcher.launch().stderr(logger).stdout(byteArrayOutputStream).pwd(workspace)
+				.cmds(commands).envs(env).join();
+		return byteArrayOutputStream.toByteArray();
+	}
+
+	private void abortIfManifestReferencesLocalUrl(final Launcher launcher,
+												   final FilePath workspace,
+												   final OutputStream logger,
+												   final EnvVars env)
+			throws IOException, InterruptedException {
+		byte[] manifestText = getManifestAsBytes(launcher, workspace, logger, env);
+
+		ManifestValidator.validate(manifestText, manifestRepositoryUrl);
 	}
 
 	private String getStaticManifest(final Launcher launcher,

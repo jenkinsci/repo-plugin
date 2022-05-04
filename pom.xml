@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>3.53</version>
+    <version>4.31</version>
     <relativePath />
   </parent>
 
@@ -16,7 +16,9 @@
   <url>https://github.com/jenkinsci/repo-plugin/blob/master/doc/README.adoc</url>
 
   <properties>
-    <jenkins.version>2.60.3</jenkins.version>
+    <revision>1.14.1</revision>
+    <changelist>-SNAPSHOT</changelist>
+    <jenkins.version>2.277.1</jenkins.version>
     <java.level>8</java.level>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
