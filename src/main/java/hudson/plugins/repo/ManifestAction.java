@@ -136,6 +136,10 @@ public class ManifestAction implements RunAction2, Serializable, BuildBadgeActio
 	 * Gets a String representation of the static manifest for this repo snapshot.
 	 */
 	public String getManifest() {
+		if (revisionState == null) {
+			setIndex(index);
+		}
+
 		return revisionState == null ? "" : revisionState.getManifest();
 	}
 
@@ -143,6 +147,10 @@ public class ManifestAction implements RunAction2, Serializable, BuildBadgeActio
 	 * Returns the manifest repository's url for this repo snapshot.
 	 */
 	public String getUrl() {
+		if (revisionState == null) {
+			setIndex(index);
+		}
+
 		return revisionState == null ? "" : revisionState.getUrl();
 	}
 
@@ -150,6 +158,10 @@ public class ManifestAction implements RunAction2, Serializable, BuildBadgeActio
 	 * Returns the manifest repository's branch name for this repo snapshot.
 	 */
 	public String getBranch() {
+		if (revisionState == null) {
+			setIndex(index);
+		}
+
 		return revisionState == null ? "" : revisionState.getBranch();
 	}
 
@@ -157,6 +169,10 @@ public class ManifestAction implements RunAction2, Serializable, BuildBadgeActio
 	 * Returns the path to the manifest file for this repo snapshot.
 	 */
 	public String getFile() {
+		if (revisionState == null) {
+			setIndex(index);
+		}
+
 		return revisionState == null ? "" : revisionState.getFile();
 	}
 }
