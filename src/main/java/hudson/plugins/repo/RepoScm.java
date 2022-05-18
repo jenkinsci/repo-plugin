@@ -951,6 +951,11 @@ public class RepoScm extends SCM implements Serializable {
 		build.addAction(manifestAction);
 	}
 
+	/**
+	 * Throws an {@link AbortException} if {@link #manifestRepositoryUrl} references a local file.
+	 *
+	 * @throws AbortException if {@link #manifestRepositoryUrl} references a local file
+	 */
 	void abortIfUrlLocal() throws AbortException {
 		if (!isValidRepositoryUrl(manifestRepositoryUrl)) {
 			throw new AbortException("Checkout of Repo url '" + manifestRepositoryUrl
@@ -961,7 +966,7 @@ public class RepoScm extends SCM implements Serializable {
 		}
 	}
 
-	private static boolean isValidRepositoryUrl(String url) {
+	private static boolean isValidRepositoryUrl(final String url) {
 		if (StringUtils.isEmpty(url)) {
 			return true;
 		} else if (url.toLowerCase(Locale.ENGLISH).startsWith("file://")) {
