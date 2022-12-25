@@ -132,6 +132,7 @@ public class RepoScm extends SCM implements Serializable {
 	@CheckForNull private EnvVars extraEnvVars;
 	@CheckForNull private boolean noCloneBundle;
 	@CheckForNull private boolean worktree;
+	@CheckForNull private boolean noSync;
 
 	/**
 	 * Returns the manifest repository URL.
@@ -388,6 +389,13 @@ public class RepoScm extends SCM implements Serializable {
 	}
 
 	/**
+	 * Returns the value of noSync.
+	 */
+	public boolean isNoSync() {
+		return noSync;
+	}
+
+	/**
 	 * The constructor takes in user parameters and sets them. Each job using
 	 * the RepoSCM will call this constructor.
 	 *
@@ -491,6 +499,7 @@ public class RepoScm extends SCM implements Serializable {
 		ignoreProjects = Collections.<String>emptySet();
 		noCloneBundle = false;
 		worktree = false;
+		noSync = false;
 	}
 
 	/**
@@ -736,6 +745,17 @@ public class RepoScm extends SCM implements Serializable {
 	@DataBoundSetter
 	public void setForceSync(final boolean forceSync) {
 		this.forceSync = forceSync;
+	}
+
+	/**
+	 * disables -sync option on repo command.
+	 * @param noSync
+	 *        If this value is true, do not add the "-sync" option when
+	 *        executing "repo ".
+	 */
+	@DataBoundSetter
+	public void setNoSync(final boolean noSync) {
+		this.noSync = noSync;
 	}
 
 	/**
@@ -1005,7 +1025,7 @@ public class RepoScm extends SCM implements Serializable {
 		}
 		commands.add(getDescriptor().getExecutable());
 		if (trace) {
-		    commands.add("--trace");
+			commands.add("--trace");
 		}
 		commands.add("sync");
 		commands.add("-d");
@@ -1057,7 +1077,7 @@ public class RepoScm extends SCM implements Serializable {
 
 		commands.add(getDescriptor().getExecutable());
 		if (trace) {
-		    commands.add("--trace");
+			commands.add("--trace");
 		}
 		commands.add("init");
 		commands.add("-u");
@@ -1111,6 +1131,10 @@ public class RepoScm extends SCM implements Serializable {
 						.cmds(commands).envs(env).join();
 		if (returnCode != 0) {
 			return false;
+		}
+		if (isNoSync()) {
+			debug.log(Level.FINEST, "Repo init completed successfully, not running repo sync");
+			return true;
 		}
 
 		if (localManifest != null) {
