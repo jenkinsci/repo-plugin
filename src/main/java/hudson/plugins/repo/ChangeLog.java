@@ -182,7 +182,7 @@ class ChangeLog extends ChangeLogParser {
             final String o = new String(gitOutput.toByteArray(), Charset.defaultCharset());
 			final String[] changelogs = o.split(
                             "\\[\\[<as7d9m1R_MARK_A>\\]\\]");
-            debug.log(Level.INFO, o);
+            debug.log(Level.FINEST, o);
 			for (final String changelog : changelogs) {
                 final String[] parts = changelog.split(
                         "\\[\\[<as7d9m1R_MARK_B>\\]");
