@@ -23,9 +23,6 @@
  */
 package hudson.plugins.repo;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.junit.Assert;
 
 import junit.framework.TestCase;
