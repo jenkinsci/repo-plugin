@@ -1051,6 +1051,12 @@ public class RepoScm extends SCM implements Serializable {
 		if (fetchSubmodules) {
 			commands.add("--fetch-submodules");
 		}
+		if (repoUrl != null) {
+			// When repoUrl is set, we allow for unsigned repo tool
+			// versions; so --no-repo-verify must be set both in init
+			// and sync.
+			commands.add("--no-repo-verify");
+		}
 		return launcher.launch().stdout(logger).pwd(workspace)
                 .cmds(commands).envs(env).join();
 	}
