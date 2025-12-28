@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>4.41</version>
+    <version>5.17</version>
     <relativePath />
   </parent>
 
@@ -18,8 +18,7 @@
   <properties>
     <revision>1.15.1</revision>
     <changelist>-SNAPSHOT</changelist>
-    <jenkins.version>2.346.1</jenkins.version>
-    <java.level>8</java.level>
+    <jenkins.version>2.492.3</jenkins.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
   </properties>
@@ -31,48 +30,6 @@
       <comments>Copyright 2011 Brad Larson. All rights reserved.</comments>
     </license>
   </licenses>
-
-  <developers>
-    <developer>
-      <id>rsandell</id>
-      <name>Robert Sandell</name>
-      <email>rsandell@cloudbees.com</email>
-      <roles>
-        <role>babysitter</role>
-      </roles>
-      <timezone>+1</timezone>
-    </developer>
-    <developer>
-      <id>aep</id>
-      <name>Arvid E. Picciani</name>
-      <email>aep-jenkins@exys.org</email>
-      <roles>
-        <role>developer</role>
-        <role>maintainer</role>
-      </roles>
-      <timezone>+1</timezone>
-    </developer>
-    <developer>
-      <id>bjarkef</id>
-      <name>Bjarke Freund-Hansen</name>
-      <email>bjarkefh@gmail.com</email>
-      <roles>
-        <role>developer</role>
-        <role>maintainer</role>
-      </roles>
-      <timezone>+1</timezone>
-    </developer>
-    <developer>
-      <id>bklarson</id>
-      <name>Brad Larson</name>
-      <email>bklarson@gmail.com</email>
-      <roles>
-        <role>developer</role>
-        <role>maintainer</role>
-      </roles>
-      <timezone>-6</timezone>
-    </developer>
-  </developers>
 
   <build>
     <plugins>
@@ -126,7 +83,7 @@
   </distributionManagement>
 
   <scm>
-    <connection>scm:git:git://github.com/jenkinsci/repo-plugin.git</connection>
+    <connection>scm:git:https://github.com/jenkinsci/repo-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:jenkinsci/repo-plugin.git</developerConnection>
     <url>http://github.com/jenkinsci/repo-plugin</url>
     <tag>HEAD</tag>

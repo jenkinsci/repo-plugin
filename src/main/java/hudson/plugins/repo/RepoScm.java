@@ -66,7 +66,7 @@ import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerRequest2;
 import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.export.ExportedBean;
 
@@ -1336,7 +1336,7 @@ public class RepoScm extends SCM implements Serializable {
 		}
 
 		@Override
-		public boolean configure(final StaplerRequest req,
+		public boolean configure(final StaplerRequest2 req,
 				final JSONObject json)
 				throws hudson.model.Descriptor.FormException {
 			repoExecutable =
