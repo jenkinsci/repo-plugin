@@ -132,6 +132,7 @@ public class RepoScm extends SCM implements Serializable {
 	@CheckForNull private EnvVars extraEnvVars;
 	@CheckForNull private boolean noCloneBundle;
 	@CheckForNull private boolean worktree;
+	@CheckForNull private boolean gitLfs;
 
 	/**
 	 * Returns the manifest repository URL.
@@ -380,6 +381,13 @@ public class RepoScm extends SCM implements Serializable {
 	}
 
 	/**
+	 * Returns the value of gitLfs.
+	 */
+	public boolean isGitLfs() {
+		return gitLfs;
+	}
+
+	/**
 	 * Returns the value of extraEnvVars.
 	 */
 	@Exported
@@ -491,6 +499,7 @@ public class RepoScm extends SCM implements Serializable {
 		ignoreProjects = Collections.<String>emptySet();
 		noCloneBundle = false;
 		worktree = false;
+		gitLfs = false;
 	}
 
 	/**
@@ -772,6 +781,18 @@ public class RepoScm extends SCM implements Serializable {
 	@DataBoundSetter
 	public void setFetchSubmodules(final boolean fetchSubmodules) {
 		this.fetchSubmodules = fetchSubmodules;
+	}
+
+	/**
+	 * Set gitLfs.
+	 *
+	 * @param gitLfs
+	 *            If this value is true, add the "--git-lfs" option when
+	 *            executing "repo init".
+	 */
+	@DataBoundSetter
+	public void setGitLfs(final boolean gitLfs) {
+		this.gitLfs = gitLfs;
 	}
 
 	/**
@@ -1105,6 +1126,9 @@ public class RepoScm extends SCM implements Serializable {
 		}
 		if (manifestSubmodules) {
 			commands.add("--submodules");
+		}
+		if (gitLfs) {
+			commands.add("--git-lfs");
 		}
 		int returnCode =
 				launcher.launch().stdout(logger).pwd(workspace)

@@ -109,5 +109,9 @@
 			<f:checkbox/>
 		</f:entry>
 
+		<f:entry title="Git LFS" field="gitLfs">
+			<f:checkbox default="false"/>
+		</f:entry>
+
 	</f:advanced>
 </j:jelly>
