@@ -66,7 +66,7 @@ import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerRequest2;
 import org.kohsuke.stapler.export.Exported;
 import org.kohsuke.stapler.export.ExportedBean;
 
@@ -133,6 +133,7 @@ public class RepoScm extends SCM implements Serializable {
 	@CheckForNull private boolean noCloneBundle;
 	@CheckForNull private boolean worktree;
 	@CheckForNull private boolean noSync;
+	@CheckForNull private boolean gitLfs;
 
 	/**
 	 * Returns the manifest repository URL.
@@ -381,6 +382,13 @@ public class RepoScm extends SCM implements Serializable {
 	}
 
 	/**
+	 * Returns the value of gitLfs.
+	 */
+	public boolean isGitLfs() {
+		return gitLfs;
+	}
+
+	/**
 	 * Returns the value of extraEnvVars.
 	 */
 	@Exported
@@ -500,6 +508,7 @@ public class RepoScm extends SCM implements Serializable {
 		noCloneBundle = false;
 		worktree = false;
 		noSync = false;
+		gitLfs = false;
 	}
 
 	/**
@@ -795,6 +804,18 @@ public class RepoScm extends SCM implements Serializable {
 	}
 
 	/**
+	 * Set gitLfs.
+	 *
+	 * @param gitLfs
+	 *            If this value is true, add the "--git-lfs" option when
+	 *            executing "repo init".
+	 */
+	@DataBoundSetter
+	public void setGitLfs(final boolean gitLfs) {
+		this.gitLfs = gitLfs;
+	}
+
+	/**
 	 * Sets list of projects which changes will be ignored when
 	 * calculating whether job needs to be rebuild. This field corresponds
 	 * to serverpath i.e. "name" section of the manifest.
@@ -1050,6 +1071,12 @@ public class RepoScm extends SCM implements Serializable {
 		if (fetchSubmodules) {
 			commands.add("--fetch-submodules");
 		}
+		if (repoUrl != null) {
+			// When repoUrl is set, we allow for unsigned repo tool
+			// versions; so --no-repo-verify must be set both in init
+			// and sync.
+			commands.add("--no-repo-verify");
+		}
 		return launcher.launch().stdout(logger).pwd(workspace)
                 .cmds(commands).envs(env).join();
 	}
@@ -1125,6 +1152,9 @@ public class RepoScm extends SCM implements Serializable {
 		}
 		if (manifestSubmodules) {
 			commands.add("--submodules");
+		}
+		if (gitLfs) {
+			commands.add("--git-lfs");
 		}
 		int returnCode =
 				launcher.launch().stdout(logger).pwd(workspace)
@@ -1360,7 +1390,7 @@ public class RepoScm extends SCM implements Serializable {
 		}
 
 		@Override
-		public boolean configure(final StaplerRequest req,
+		public boolean configure(final StaplerRequest2 req,
 				final JSONObject json)
 				throws hudson.model.Descriptor.FormException {
 			repoExecutable =

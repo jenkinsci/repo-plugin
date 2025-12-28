@@ -10,7 +10,7 @@
 	<f:section title="Repo">
 		<f:entry title="Repo command line executable"  help="/plugin/repo/help-executable.html">
 			<f:textbox name="repo.executable" value="${descriptor.executable}"
-				checkUrl="'${rootURL}/scm/RepoScm/executableCheck?value='+escape(this.value)"/>
+				checkUrl="${rootURL}/scm/RepoScm/executableCheck" checkDependsOn=""/>
 		</f:entry>
 	</f:section>
 </j:jelly>
