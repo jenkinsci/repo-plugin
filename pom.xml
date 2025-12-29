@@ -9,7 +9,7 @@
 
   <groupId>org.jenkins-ci.plugins</groupId>
   <artifactId>repo</artifactId>
-  <version>1.17.1-SNAPSHOT</version>
+  <version>1.17.0</version>
   <packaging>hpi</packaging>
   <name>Jenkins REPO plugin</name>
   <description>Integrates Jenkins with REPO SCM</description>
@@ -86,7 +86,7 @@
     <connection>scm:git:https://github.com/jenkinsci/repo-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:jenkinsci/repo-plugin.git</developerConnection>
     <url>http://github.com/jenkinsci/repo-plugin</url>
-    <tag>HEAD</tag>
+    <tag>repo-1.17.0-r2</tag>
   </scm>
 
 
