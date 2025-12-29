@@ -31,6 +31,7 @@ import java.io.Serializable;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -994,15 +995,32 @@ public class RepoScm extends SCM implements Serializable {
 		}
 	}
 
-	private void abortIfUrlLocal() throws AbortException {
-		if (StringUtils.isNotEmpty(manifestRepositoryUrl)
-				&& (manifestRepositoryUrl.toLowerCase(Locale.ENGLISH).startsWith("file://")
-				|| Files.exists(Paths.get(manifestRepositoryUrl)))) {
+	/**
+	 * Throws an {@link AbortException} if {@link #manifestRepositoryUrl} references a local file.
+	 *
+	 * @throws AbortException if {@link #manifestRepositoryUrl} references a local file
+	 */
+	void abortIfUrlLocal() throws AbortException {
+		if (!isValidRepositoryUrl(manifestRepositoryUrl)) {
 			throw new AbortException("Checkout of Repo url '" + manifestRepositoryUrl
 					+ "' aborted because it references a local directory, "
 					+ "which may be insecure. "
 					+ "You can allow local checkouts anyway by setting the system property '"
 					+ ALLOW_LOCAL_CHECKOUT_PROPERTY + "' to true.");
+		}
+	}
+
+	private static boolean isValidRepositoryUrl(final String url) {
+		if (StringUtils.isEmpty(url)) {
+			return true;
+		} else if (url.toLowerCase(Locale.ENGLISH).startsWith("file://")) {
+			return false;
+		}
+		try {
+			// Check for local URLs with no protocol like /path/to/repo
+			return !Files.exists(Paths.get(url));
+		} catch (InvalidPathException e) {
+			return true;
 		}
 	}
 
