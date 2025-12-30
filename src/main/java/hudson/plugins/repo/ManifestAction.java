@@ -81,7 +81,7 @@ public class ManifestAction implements RunAction2, Serializable, BuildBadgeActio
 	 * Returns the display name to use for the action.
 	 */
 	public String getDisplayName() {
-		return "Repo Manifest";
+		return "Repo Manifest ’" + getFile() + "’";
 	}
 
 	/**
