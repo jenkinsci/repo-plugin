@@ -62,7 +62,6 @@ import hudson.scm.SCMDescriptor;
 import hudson.scm.SCMRevisionState;
 import net.sf.json.JSONObject;
 
-import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
@@ -76,6 +75,7 @@ import hudson.util.FormValidation;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Objects;
 
 /**
  * The main entrypoint of the plugin. This class contains code to store user
@@ -287,7 +287,7 @@ public class RepoScm extends SCM implements Serializable {
 	 */
 	@Exported
 	public String getIgnoreProjects() {
-		return StringUtils.join(ignoreProjects, '\n');
+		return ignoreProjects == null ? null : String.join("\n", ignoreProjects);
 	}
 
 	/**
@@ -995,7 +995,7 @@ public class RepoScm extends SCM implements Serializable {
 	}
 
 	private void abortIfUrlLocal() throws AbortException {
-		if (StringUtils.isNotEmpty(manifestRepositoryUrl)
+		if (Util.fixEmpty(manifestRepositoryUrl) != null
 				&& (manifestRepositoryUrl.toLowerCase(Locale.ENGLISH).startsWith("file://")
 				|| Files.exists(Paths.get(manifestRepositoryUrl)))) {
 			throw new AbortException("Checkout of Repo url '" + manifestRepositoryUrl
@@ -1295,9 +1295,9 @@ public class RepoScm extends SCM implements Serializable {
 
     private boolean isRelevantState(final RevisionState state, final String url,
                                     final String branch, final String file) {
-	    return StringUtils.equals(state.getBranch(), branch)
-				&& StringUtils.equals(state.getUrl(), url)
-				&& StringUtils.equals(state.getFile(), file);
+	    return Objects.equals(state.getBranch(), branch)
+				&& Objects.equals(state.getUrl(), url)
+				&& Objects.equals(state.getFile(), file);
     }
 
 	@Nonnull
