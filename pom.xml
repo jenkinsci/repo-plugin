@@ -9,15 +9,14 @@
 
   <groupId>org.jenkins-ci.plugins</groupId>
   <artifactId>repo</artifactId>
-  <version>1.17.1-SNAPSHOT</version>
+  <version>${changelist}</version>
   <packaging>hpi</packaging>
   <name>Jenkins REPO plugin</name>
   <description>Integrates Jenkins with REPO SCM</description>
   <url>https://github.com/jenkinsci/repo-plugin/blob/master/README.adoc</url>
 
   <properties>
-    <revision>1.15.1</revision>
-    <changelist>-SNAPSHOT</changelist>
+    <changelist>999999-SNAPSHOT</changelist>
     <jenkins.version>2.492.3</jenkins.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -38,7 +37,7 @@
         <artifactId>maven-checkstyle-plugin</artifactId>
         <version>2.17</version>
         <configuration>
-          <configLocation>checkstyle.xml</configLocation>
+          <configLocation>${project.basedir}/checkstyle.xml</configLocation>
           <failsOnError>true</failsOnError>
           <consoleOutput>true</consoleOutput>
         </configuration>
@@ -86,7 +85,7 @@
     <connection>scm:git:https://github.com/jenkinsci/repo-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:jenkinsci/repo-plugin.git</developerConnection>
     <url>http://github.com/jenkinsci/repo-plugin</url>
-    <tag>HEAD</tag>
+    <tag>${scmTag}</tag>
   </scm>
 
 
