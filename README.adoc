@@ -7,10 +7,6 @@ image:https://img.shields.io/jenkins/plugin/i/repo.svg?color=blue[link="https://
 
 This plugin adds https://gerrit.googlesource.com/git-repo[Repo] as an SCM provider in Jenkins.
 
-*This plugin is up for adoption.* Want to help improve this plugin?
-https://wiki.jenkins.io/display/JENKINS/Adopt+a+Plugin[Click here to
-learn more]!
-
 :toc: preamble
 :toclevels: 3
 
