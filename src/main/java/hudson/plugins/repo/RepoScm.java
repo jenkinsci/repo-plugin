@@ -51,9 +51,10 @@ import hudson.Launcher;
 import hudson.Util;
 import hudson.model.Job;
 import hudson.model.ParameterDefinition;
+import hudson.model.ParameterValue;
 import hudson.model.ParametersDefinitionProperty;
 import hudson.model.Run;
-import hudson.model.StringParameterDefinition;
+import hudson.model.StringParameterValue;
 import hudson.model.TaskListener;
 import hudson.scm.ChangeLogParser;
 import hudson.scm.PollingResult;
@@ -169,12 +170,11 @@ public class RepoScm extends SCM implements Serializable {
 		if (params != null) {
 			for (ParameterDefinition param
 					: params.getParameterDefinitions()) {
-				if (param instanceof StringParameterDefinition) {
-					final StringParameterDefinition stpd =
-						(StringParameterDefinition) param;
-					final String dflt = stpd.getDefaultValue();
-					if (dflt != null) {
-						finalEnv.put(param.getName(), dflt);
+				ParameterValue defaultParamValue = param.getDefaultParameterValue();
+				if (defaultParamValue instanceof StringParameterValue) {
+					final StringParameterValue spv = (StringParameterValue) defaultParamValue;
+					if (spv.getValue() != null) {
+						finalEnv.put(param.getName(), spv.toString());
 					}
 				}
 			}
